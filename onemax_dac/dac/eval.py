@@ -58,6 +58,7 @@ def evaluate_policy(
             range(n_eval_episodes),
             desc="Parallel Progress",
             disable=not verbose,
+            ncols=100
         )
     )
     return action_indices, policy, runtimes

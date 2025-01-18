@@ -69,7 +69,7 @@ class OneMaxDAC:
         """
         Populate the replay buffer with random actions
         """
-        for _ in tqdm(range(self.training_config.warmup_steps), desc="Populating Buffer"):
+        for _ in tqdm(range(self.training_config.warmup_steps), desc="Populating Buffer", ncols=100):
             self.agent.play_step(
                 net = self.q_online,
                 shift = 0,
@@ -206,6 +206,7 @@ class OneMaxDAC:
                 range(n_test_episodes),
                 desc="Parallel Progress",
                 disable=not verbose,
+                ncols=100
             )
         )
         discrete_runtimes = Parallel(n_jobs=self.training_config.num_workers)(
@@ -220,6 +221,7 @@ class OneMaxDAC:
                 range(n_test_episodes),
                 desc="Parallel Progress",
                 disable=not verbose,
+                ncols=100
             )
         )
         test_results.append(
@@ -251,6 +253,7 @@ class OneMaxDAC:
                     range(n_test_episodes),
                     desc="Parallel Progress",
                     disable=not verbose,
+                    ncols=100
                 )
             )
             mean_runtime = np.mean(runtimes)

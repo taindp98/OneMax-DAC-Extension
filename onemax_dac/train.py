@@ -4,13 +4,15 @@ from onemax_dac.dac import (
     Agent,
     ReplayBuffer,
     Logger,
-    get_time_str
+    get_time_str,
+    seed_everything,
 )
 from onemax_dac.envs import OneMax
 from torch import nn
 import numpy as np
 import os
 import yaml
+import torch
 from onemax_dac.dac.trainer import OneMaxDAC
 
 def main():
@@ -87,9 +89,15 @@ def main():
     )
     # Here you can continue with the logic to initialize the agent and start training
     # agent = RLAgent(training_config, policy_config, env_config)
+    seed_everything(training_config.seed)
     trainer.learn(
         verbose=1
     )
 
 if __name__ == "__main__":
+    torch.use_deterministic_algorithms(True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.set_default_dtype(torch.float32)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     main()
