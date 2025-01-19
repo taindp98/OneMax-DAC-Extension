@@ -74,6 +74,7 @@ class OneMaxDAC:
                 net = self.q_online,
                 shift = 0,
                 epsilon = self.training_config.epsilon_start,
+                device=self.device,
             )
         
         if "shifted" in self.agent.env.reward_choice:
@@ -140,6 +141,7 @@ class OneMaxDAC:
                 net = self.q_online,
                 shift = self.shift,
                 epsilon = self.training_config.epsilon_end,
+                device=self.device,
             )
             loss = self.training_step(
                 batch_size=self.training_config.batch_size,
@@ -152,6 +154,7 @@ class OneMaxDAC:
                     num_workers=self.training_config.num_workers,
                     init_obj_rate=self.agent.env.init_obj_rate,
                     verbose = False,
+                    device=self.device,
                 )
                 ## csv logging action_indices, policy, runtimes, episode, step
                 self.logger.log_json(
@@ -266,8 +269,6 @@ class OneMaxDAC:
                     "runtimes": runtimes
                 }
             )
-        # df_test_results = pd.DataFrame(test_results)
-        # df_test_results.to_csv(os.path.join(self.ckpt_dir, "test_results.csv"), index=False)
         # Dumping the results to a JSON file
         output_file_path = os.path.join(self.ckpt_dir, "test_results.json")
         with open(output_file_path, "w") as json_file:

@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional
 from onemax_dac.envs import OneMax
 from torch import nn
 from onemax_dac.dac.utils import to_tensor
+import torch
 
 def evaluate_policy(
     net: nn.Module,
@@ -13,6 +14,7 @@ def evaluate_policy(
     num_workers: int = 1,
     init_obj_rate: float = 0.5,
     verbose: int = 1,
+    device: torch.device = torch.device("cpu"),
 ):
     """
     Evaluate the policy for a given number of episodes
@@ -27,7 +29,7 @@ def evaluate_policy(
     problem_size = env.n
     all_states = to_tensor(
         np.array([[problem_size, fx] for fx in range(0, problem_size)]),
-        device=net.device,
+        device=device,
     )
     q_values = net(all_states)
     action_indices = q_values.argmax(dim=1).cpu().numpy().tolist()

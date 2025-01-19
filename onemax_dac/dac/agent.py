@@ -23,11 +23,11 @@ class Agent:
         self.rng = rng
         self.total_episodes = 0
 
-    def get_action(self, x: np.ndarray, net, epsilon) -> int:
+    def get_action(self, x: np.ndarray, net, epsilon, device=torch.device("cpu")) -> int:
         """
         Simple helper to get action epsilon-greedy based on observation x
         """
-        u = torch.argmax(net(to_tensor(x, net.device))).item()
+        u = torch.argmax(net(to_tensor(x, device))).item()
         r = self.rng.random()
         if r < epsilon:
             return self.rng.integers(low=0, high=self.env.action_dim)
@@ -39,6 +39,7 @@ class Agent:
         net: nn.Module,
         shift: int = 0,
         epsilon: float = 0.0,
+        device: torch.device = torch.device("cpu"),
     ) -> Tuple[float, bool]:
         """Carries out a single interaction step between the agent and the environment.
 
@@ -50,7 +51,7 @@ class Agent:
             reward, done
 
         """
-        action = self.get_action(self.state, net, epsilon)
+        action = self.get_action(self.state, net, epsilon, device)
         # do step in the environment
         # So, in the deprecated version of gym, the env.step() has 4 values unpacked which is
         #     obs, reward, done, info = env.step(action)

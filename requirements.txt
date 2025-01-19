@@ -1,6 +1,13 @@
-black
-flake8
-isort
 pip
 python-dotenv
+black==24.10.0
+gymnasium==0.29.1
+tensorboard==2.18.0
+ioh==0.3.17
+torch
+tqdm==4.66.5
+pyyaml==6.0.2
+wandb==0.18.5
+joblib==1.4.2
+torchsummary==1.5.1
 -e .
