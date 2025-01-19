@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import create_mlp
 
+
 class QNetwork(nn.Module):
     """
     Action-Value (Q-Value) network for DQN
@@ -9,8 +10,8 @@ class QNetwork(nn.Module):
 
     def __init__(
         self,
-        state_dim:int,
-        action_dim:int,
+        state_dim: int,
+        action_dim: int,
         activation_fn=nn.ReLU,
         net_arch: list = [50, 50],
     ):
@@ -25,7 +26,7 @@ class QNetwork(nn.Module):
             input_dim=state_dim,
             output_dim=action_dim,
             net_arch=net_arch,
-            activation_fn=activation_fn
+            activation_fn=activation_fn,
         )
         self.q_net = nn.Sequential(*q_net)
 
@@ -37,7 +38,8 @@ class QNetwork(nn.Module):
         :return: The estimated Q-Value for each action.
         """
         return self.q_net(x)
-    
+
+
 if __name__ == "__main__":
     # Test QNetwork
     state_dim = 2

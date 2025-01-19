@@ -1,7 +1,10 @@
 from typing import List
+
+
 class PolicyConfig:
     def __init__(
-        self, policy_name: str = "DDQN",
+        self,
+        policy_name: str = "DDQN",
         net_arch: List[int] = [50, 50],
         activation_fn: str = "ReLU",
     ):

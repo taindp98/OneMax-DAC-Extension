@@ -6,6 +6,7 @@ import numpy as np
 import json
 import pandas as pd
 
+
 def soft_update(target, source, tau: float = 0.01):
     """
     Simple Helper for updating target-network parameters
@@ -15,6 +16,7 @@ def soft_update(target, source, tau: float = 0.01):
     """
     for target_param, param in zip(target.parameters(), source.parameters()):
         target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
+
 
 def get_time_str():
     """
@@ -27,12 +29,14 @@ def get_time_str():
     time_str = f"{date_str}_{time_str}"
     return time_str
 
+
 def to_tensor(ndarray, device=torch.device("cpu")):
     """
     Convert a numpy array to a PyTorch tensor
     """
     tensor = torch.tensor(ndarray, dtype=torch.float32)
     return tensor.to(device)
+
 
 def seed_everything(seed=42):
     """
@@ -45,6 +49,7 @@ def seed_everything(seed=42):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
+
 
 # def plot_policy(results_fpath: str) -> torch.Tensor:
 #     evals_data = json.load(open(results_fpath))

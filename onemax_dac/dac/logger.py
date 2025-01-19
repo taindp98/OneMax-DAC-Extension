@@ -5,6 +5,7 @@ import os
 import json
 import numpy as np
 
+
 class Logger:
     def __init__(
         self,
@@ -135,20 +136,23 @@ class Logger:
         """String representation of the most recent metric values."""
         last_values = self.get_all_last_values()
         return " | ".join(f"{key}: {value:.2f}" for key, value in last_values.items())
-    
+
     def log_json(self, phase: str = "trainval", **kwargs):
         """
         Append a new entry of metrics to the JSON file.
         Args:
             kwargs: Metric names and their corresponding values.
         """
+
         # Function to convert any numpy types to native Python types
         def convert_numpy_types(obj):
             if isinstance(obj, np.int64):  # Check for numpy int64
                 return int(obj)
             elif isinstance(obj, np.float64):  # Check for numpy float64
                 return float(obj)
-            elif isinstance(obj, np.ndarray):  # If it's a NumPy array, recursively apply conversion
+            elif isinstance(
+                obj, np.ndarray
+            ):  # If it's a NumPy array, recursively apply conversion
                 return obj.tolist()  # Convert NumPy array to list
             elif isinstance(obj, list):  # If it's a list, apply conversion to each item
                 return [convert_numpy_types(item) for item in obj]
@@ -159,9 +163,7 @@ class Logger:
 
         # Ensure the file exists, if not create an empty list
         if not os.path.exists(self.log_json_fpath):
-            init_data = {
-                phase: []
-            }
+            init_data = {phase: []}
             with open(self.log_json_fpath, mode="w") as file:
                 json.dump(init_data, file)  # Start with an empty list
 

@@ -15,6 +15,7 @@ import yaml
 import torch
 from onemax_dac.dac.trainer import OneMaxDAC
 
+
 def main():
     # Parse the command-line arguments
     training_config, policy_config, env_config = parse_args()
@@ -27,7 +28,7 @@ def main():
         action_choices=env_config.action_choices,
         reward_choice=env_config.reward_choice,
         init_obj_rate=env_config.init_obj_rate,
-        rng = global_rng
+        rng=global_rng,
     )
     q_online = QNetwork(
         state_dim=onemax_env.state_dim,
@@ -41,15 +42,8 @@ def main():
         net_arch=policy_config.net_arch,
         activation_fn=getattr(nn, policy_config.activation_fn),
     )
-    replay_buffer = ReplayBuffer(
-        max_size = training_config.buffer_size,
-        rng=global_rng
-    )
-    agent = Agent(
-        env=onemax_env,
-        replay_buffer=replay_buffer,
-        rng=global_rng
-    )
+    replay_buffer = ReplayBuffer(max_size=training_config.buffer_size, rng=global_rng)
+    agent = Agent(env=onemax_env, replay_buffer=replay_buffer, rng=global_rng)
     save_dir = os.path.join(
         training_config.output_dir, "checkpoints", get_time_str(), f"seed_{training_config.seed}"
     )
@@ -76,19 +70,18 @@ def main():
     )
     trainer = OneMaxDAC(
         agent=agent,
-        q_online = q_online,
-        q_target = q_target,
+        q_online=q_online,
+        q_target=q_target,
         logger=logger,
-        rng = global_rng,
+        rng=global_rng,
         ckpt_dir=save_dir,
-        training_config=training_config
+        training_config=training_config,
     )
     # Here you can continue with the logic to initialize the agent and start training
     # agent = RLAgent(training_config, policy_config, env_config)
     seed_everything(training_config.seed)
-    trainer.learn(
-        verbose=1
-    )
+    trainer.learn(verbose=1)
+
 
 if __name__ == "__main__":
     torch.use_deterministic_algorithms(True)

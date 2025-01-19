@@ -10,13 +10,14 @@ from onemax_dac.dac import (
     Agent,
     evaluate_policy,
     single_run_onell,
-    onell_dynamic_theory
+    onell_dynamic_theory,
 )
 from joblib import Parallel, delayed
 import pandas as pd
 from onemax_dac.dac.utils import to_tensor, soft_update
 from onemax_dac.configs import TrainingConfig
 import json
+
 
 class OneMaxDAC:
     def __init__(
@@ -57,7 +58,7 @@ class OneMaxDAC:
             self.q_online.parameters(),
             lr=self.training_config.learning_rate,
         )
-        self.ckpt_dir = ckpt_dir        
+        self.ckpt_dir = ckpt_dir
         if self.training_config.loss_fn == "MSE":
             self.loss_fnc = F.mse_loss
         else:
@@ -69,14 +70,16 @@ class OneMaxDAC:
         """
         Populate the replay buffer with random actions
         """
-        for _ in tqdm(range(self.training_config.warmup_steps), desc="Populating Buffer", ncols=100):
+        for _ in tqdm(
+            range(self.training_config.warmup_steps), desc="Populating Buffer", ncols=100
+        ):
             self.agent.play_step(
-                net = self.q_online,
-                shift = 0,
-                epsilon = self.training_config.epsilon_start,
+                net=self.q_online,
+                shift=0,
+                epsilon=self.training_config.epsilon_start,
                 device=self.device,
             )
-        
+
         if "shifted" in self.agent.env.reward_choice:
             if self.training_config.fixed_shift:
                 self.shift = float(self.training_config.fixed_shift)
@@ -84,7 +87,7 @@ class OneMaxDAC:
                 self.shift = -self.agent.replay_buffer.get_reward_stats(mode="median") / 5
         else:
             self.shift = 0
-        
+
         self.logger.log_json(
             phase="settings",
             shift=self.shift,
@@ -142,9 +145,9 @@ class OneMaxDAC:
         best_val_rt = np.inf
         for step in progress_bar:
             self.agent.play_step(
-                net = self.q_online,
-                shift = self.shift,
-                epsilon = self.training_config.epsilon_end,
+                net=self.q_online,
+                shift=self.shift,
+                epsilon=self.training_config.epsilon_end,
                 device=self.device,
             )
             loss = self.training_step(
@@ -157,14 +160,14 @@ class OneMaxDAC:
                     n_eval_episodes=self.training_config.n_eval_episodes,
                     num_workers=self.training_config.num_workers,
                     init_obj_rate=self.agent.env.init_obj_rate,
-                    verbose = False,
+                    verbose=False,
                     device=self.device,
                 )
                 ## csv logging action_indices, policy, runtimes, episode, step
                 self.logger.log_json(
                     phase="trainval",
                     episode=self.agent.total_episodes,
-                    step=step+self.training_config.warmup_steps,
+                    step=step + self.training_config.warmup_steps,
                     action_indices=action_indices,
                     policy=policy,
                     runtimes=runtimes,
@@ -174,19 +177,19 @@ class OneMaxDAC:
                     best_val_rt = mean_val_rt
                     torch.save(self.q_online.state_dict(), os.path.join(self.ckpt_dir, "best.pt"))
                 self.logger.update(
-                    step=step+self.training_config.warmup_steps,
+                    step=step + self.training_config.warmup_steps,
                     shift=self.shift,
                     loss=loss,
-                    best_val_rt=best_val_rt
+                    best_val_rt=best_val_rt,
                 )
                 progress_bar.set_description(f"[Training]: {self.logger}")
-    
+
         self.test(k=5, n_test_episodes=1000, verbose=verbose)
         self.logger.close()
 
     def __repr__(self):
         return "onemaxdac"
-    
+
     def test(self, k: int = 5, n_test_episodes: int = 1000, verbose: int = -1):
         ## load evaluation data and convert to pandas dataframe
         json_logdata = json.load(open(os.path.join(self.ckpt_dir, "evaluations.json")))
@@ -209,13 +212,10 @@ class OneMaxDAC:
                 discrete_portfolio=[],
                 seed=i,
                 cutoff=cutoff,
-                init_obj_rate=init_obj_rate
+                init_obj_rate=init_obj_rate,
             )
             for i in tqdm(
-                range(n_test_episodes),
-                desc="Parallel Progress",
-                disable=not verbose,
-                ncols=100
+                range(n_test_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
             )
         )
         self.logger.log_json(
@@ -232,13 +232,10 @@ class OneMaxDAC:
                 discrete_portfolio=self.agent.env.action_choices,
                 seed=i,
                 cutoff=cutoff,
-                init_obj_rate=init_obj_rate
+                init_obj_rate=init_obj_rate,
             )
             for i in tqdm(
-                range(n_test_episodes),
-                desc="Parallel Progress",
-                disable=not verbose,
-                ncols=100
+                range(n_test_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
             )
         )
         self.logger.log_json(
@@ -257,13 +254,13 @@ class OneMaxDAC:
                     oll_parameters=policy,
                     seed=i,
                     cutoff=cutoff,
-                    init_obj_rate=init_obj_rate
+                    init_obj_rate=init_obj_rate,
                 )
                 for i in tqdm(
                     range(n_test_episodes),
                     desc="Parallel Progress",
                     disable=not verbose,
-                    ncols=100
+                    ncols=100,
                 )
             )
             self.logger.log_json(

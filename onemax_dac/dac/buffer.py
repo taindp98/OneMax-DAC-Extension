@@ -4,6 +4,7 @@ from collections import namedtuple
 from typing import List
 import numpy as np
 
+
 class ReplayBuffer:
     def __init__(self, max_size, rng=np.random.default_rng()):
         """
@@ -57,9 +58,7 @@ class ReplayBuffer:
         batch_actions = np.array([self._data.actions[i] for i in batch_indices])
         batch_next_states = np.array([self._data.next_states[i] for i in batch_indices])
         batch_rewards = np.array([self._data.rewards[i] for i in batch_indices])
-        batch_terminal_flags = np.array(
-            [self._data.terminal_flags[i] for i in batch_indices]
-        )
+        batch_terminal_flags = np.array([self._data.terminal_flags[i] for i in batch_indices])
         return (
             batch_states,
             batch_actions,

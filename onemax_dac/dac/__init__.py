@@ -3,7 +3,4 @@ from onemax_dac.dac.logger import Logger
 from onemax_dac.dac.buffer import ReplayBuffer
 from onemax_dac.dac.eval import evaluate_policy, single_run_onell, onell_dynamic_theory
 from onemax_dac.dac.agent import Agent
-from onemax_dac.dac.utils import (
-    get_time_str,
-    seed_everything
-)
+from onemax_dac.dac.utils import get_time_str, seed_everything

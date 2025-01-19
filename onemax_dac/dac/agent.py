@@ -1,6 +1,4 @@
-from onemax_dac.dac import (
-    ReplayBuffer
-)
+from onemax_dac.dac import ReplayBuffer
 from onemax_dac.theory_env import OneMax
 from torch import Tensor, nn
 import numpy as np
@@ -8,8 +6,11 @@ import torch
 from typing import Tuple
 from onemax_dac.dac.utils import to_tensor
 
+
 class Agent:
-    def __init__(self, env: OneMax, replay_buffer: ReplayBuffer, rng=np.random.default_rng()) -> None:
+    def __init__(
+        self, env: OneMax, replay_buffer: ReplayBuffer, rng=np.random.default_rng()
+    ) -> None:
         """Base Agent class handling the interaction with the environment.
 
         Args:
@@ -62,9 +63,7 @@ class Agent:
             shift=shift,
         )
 
-        self.replay_buffer.add_transition(
-            self.state, action, new_state, reward, done
-        )
+        self.replay_buffer.add_transition(self.state, action, new_state, reward, done)
         self.state = new_state
         if done:
             self.state, _ = self.env.reset()

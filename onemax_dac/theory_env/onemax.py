@@ -1,6 +1,8 @@
 """Theory Environment."""
+
 from copy import deepcopy
 import numpy as np
+
 
 class BinaryProblem:
     """An abstract class for an individual in binary representation."""
@@ -19,9 +21,7 @@ class BinaryProblem:
             rng = np.random.default_rng()
         nbits = self.data.sum()
         if nbits < k:
-            ids = rng.choice(
-                np.where(self.data is False)[0], size=k - nbits, replace=False
-            )
+            ids = rng.choice(np.where(self.data is False)[0], size=k - nbits, replace=False)
             self.data[ids] = True
             self.eval()
 
@@ -215,9 +215,7 @@ class BinaryProblem:
 
             if (
                 obj not in (self.fitness, xprime.fitness)
-                or (
-                    not np.array_equal(xprime.data[locs_xprime], self.data[locs_xprime])
-                )
+                or (not np.array_equal(xprime.data[locs_xprime], self.data[locs_xprime]))
                 and (not np.array_equal(self.data[locs_x], xprime.data[locs_x]))
             ):
                 n_evals += 1
@@ -233,6 +231,7 @@ class BinaryProblem:
 
         return child, child.fitness, n_evals
 
+
 class OneMax(BinaryProblem):
     """
     An individual for OneMax problem.
@@ -241,14 +240,14 @@ class OneMax(BinaryProblem):
     """
 
     def __init__(
-            self,
-            n: int,
-            state_dim: int = 2,
-            action_choices: list = [],
-            reward_choice: str = "imp_minus_evals_shifted",
-            rng=np.random.default_rng(),
-            init_obj_rate=None,
-            **kwargs
+        self,
+        n: int,
+        state_dim: int = 2,
+        action_choices: list = [],
+        reward_choice: str = "imp_minus_evals_shifted",
+        rng=np.random.default_rng(),
+        init_obj_rate=None,
+        **kwargs,
     ):
         self.n = n
         self.init_obj_rate = init_obj_rate
@@ -277,7 +276,6 @@ class OneMax(BinaryProblem):
 
         # print(f"🚀 Action choices: {self.action_choices}")
         self.state_dim = state_dim
-        
 
     def eval(self):
         """
@@ -337,7 +335,7 @@ class OneMax(BinaryProblem):
     def step(self, action_index: int, shift: float = 0.0):
         """
         Perform the action on the individual and return the new state, reward, termination status and info
-        
+
         """
         fitness_before_update = self.eval()
 

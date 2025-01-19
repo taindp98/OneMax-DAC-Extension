@@ -7,12 +7,13 @@ from torch import nn
 from onemax_dac.dac.utils import to_tensor
 import torch
 
+
 def evaluate_policy(
     net: nn.Module,
     env: OneMax,
     n_eval_episodes: int,
     num_workers: int = 1,
-    init_obj_rate = 0.5,
+    init_obj_rate=0.5,
     verbose: int = 1,
     device: torch.device = torch.device("cpu"),
 ):
@@ -54,16 +55,14 @@ def evaluate_policy(
             oll_parameters=policy,
             seed=i,
             cutoff=cutoff,
-            init_obj_rate=init_obj_rate
+            init_obj_rate=init_obj_rate,
         )
         for i in tqdm(
-            range(n_eval_episodes),
-            desc="Parallel Progress",
-            disable=not verbose,
-            ncols=100
+            range(n_eval_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
         )
     )
     return action_indices, policy, runtimes
+
 
 def onell_dynamic_theory(
     n,
@@ -123,7 +122,7 @@ def single_run_onell(
     oll_parameters: List[Tuple[float, int, float, int]],
     seed: int,
     cutoff: int,
-    init_obj_rate
+    init_obj_rate,
 ):
     """
     Single run of (1+LL)-GA
@@ -140,13 +139,9 @@ def single_run_onell(
     # total number of solution evaluations
     total_evals = 1
     for _ in range(int(cutoff)):
-        mutation_rate, mutation_size, crossover_rate, crossover_size = oll_parameters[
-            f_x
-        ]
+        mutation_rate, mutation_size, crossover_rate, crossover_size = oll_parameters[f_x]
         # mutation phase
-        xprime, f_xprime, ne1 = x.mutate(
-            p=mutation_rate, n_childs=mutation_size, rng=rng
-        )
+        xprime, f_xprime, ne1 = x.mutate(p=mutation_rate, n_childs=mutation_size, rng=rng)
         # crossover phase
         y, f_y, ne2 = x.crossover(
             xprime=xprime,
