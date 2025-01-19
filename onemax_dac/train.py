@@ -7,7 +7,7 @@ from onemax_dac.dac import (
     get_time_str,
     seed_everything,
 )
-from onemax_dac.env import OneMax
+from onemax_dac.theory_env import OneMax
 from torch import nn
 import numpy as np
 import os

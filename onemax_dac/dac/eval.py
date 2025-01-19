@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from typing import List, Tuple, Optional
-from onemax_dac.env import OneMax
+from onemax_dac.theory_env import OneMax
 from torch import nn
 from onemax_dac.dac.utils import to_tensor
 import torch

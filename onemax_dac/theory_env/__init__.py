@@ -1,1 +1,1 @@
-from onemax_dac.env.onemax import OneMax
+from onemax_dac.theory_env.onemax import OneMax
