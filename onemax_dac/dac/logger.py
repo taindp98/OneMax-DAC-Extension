@@ -14,7 +14,7 @@ class Logger:
         save_dir: str = "outputs/logs",
     ):
         """
-        Tools: Tensorboard, Wandb, CSV
+        Tools: Tensorboard, Wandb, JSON
         Args:
             config (dict): Configuration dictionary.
             use_wandb (bool): Whether to use Weights & Biases.
@@ -136,7 +136,7 @@ class Logger:
         last_values = self.get_all_last_values()
         return " | ".join(f"{key}: {value:.2f}" for key, value in last_values.items())
     
-    def log_json(self, **kwargs):
+    def log_json(self, phase: str = "trainval", **kwargs):
         """
         Append a new entry of metrics to the JSON file.
         Args:
@@ -159,15 +159,22 @@ class Logger:
 
         # Ensure the file exists, if not create an empty list
         if not os.path.exists(self.log_json_fpath):
+            init_data = {
+                phase: []
+            }
             with open(self.log_json_fpath, mode="w") as file:
-                json.dump([], file)  # Start with an empty list
+                json.dump(init_data, file)  # Start with an empty list
 
         # Load existing data from the JSON file
         with open(self.log_json_fpath, mode="r") as file:
             data = json.load(file)
+            if phase not in data:
+                data[phase] = []
+            data_phase = data[phase]
 
         # Append the new metrics to the list
-        data.append(kwargs)
+        data_phase.append(kwargs)
+        data[phase] = data_phase
 
         # Write the updated list back to the file
         with open(self.log_json_fpath, mode="w") as file:

@@ -41,6 +41,3 @@ class TrainingConfig:
     def to_dict(self):
         """Convert the class attributes to a dictionary."""
         return self.__dict__
-    
-    def __repr__(self):
-        return f"TrainingConfig(max_steps={self.max_steps}, epsilon_start={self.epsilon_start}, epsilon_end={self.epsilon_end}, warmup_steps={self.warmup_steps}, batch_size={self.batch_size}, learning_rate={self.learning_rate}, gamma={self.gamma}, loss_fn={self.loss_fn}, eval_interval={self.eval_interval}, n_eval_episodes={self.n_eval_episodes}, output_dir={self.output_dir}, accelerator={self.accelerator}, num_workers={self.num_workers}, wandb={self.wandb})"

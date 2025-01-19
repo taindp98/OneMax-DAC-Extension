@@ -1,7 +1,7 @@
 from onemax_dac.dac import (
     ReplayBuffer
 )
-from onemax_dac.envs import OneMax
+from onemax_dac.env import OneMax
 from torch import Tensor, nn
 import numpy as np
 import torch

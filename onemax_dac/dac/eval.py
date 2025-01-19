@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from typing import List, Tuple, Optional
-from onemax_dac.envs import OneMax
+from onemax_dac.env import OneMax
 from torch import nn
 from onemax_dac.dac.utils import to_tensor
 import torch
@@ -12,7 +12,7 @@ def evaluate_policy(
     env: OneMax,
     n_eval_episodes: int,
     num_workers: int = 1,
-    init_obj_rate: float = 0.5,
+    init_obj_rate = 0.5,
     verbose: int = 1,
     device: torch.device = torch.device("cpu"),
 ):
@@ -72,7 +72,7 @@ def onell_dynamic_theory(
     cutoff: int = 1e6,
     count_different_inds_only=True,
     include_xprime_crossover=True,
-    probability: float = 0.0,
+    init_obj_rate: float = 0.0,
 ):
     """
     (1+LL)-GA, dynamic version with theoretical results
@@ -80,7 +80,8 @@ def onell_dynamic_theory(
     quantize the lambda values to the nearest value in the discrete_portfolio
     """
     rng = np.random.Generator(np.random.MT19937(seed))
-    x = OneMax(n=n, rng=rng, init_obj=int(probability * n))
+    init_obj = int(init_obj_rate * n) if init_obj_rate is not None else None
+    x = OneMax(n=n, rng=rng, init_obj=init_obj)
     f_x = x.fitness
     # total number of solution evaluations
     total_evals = 1
@@ -122,7 +123,7 @@ def single_run_onell(
     oll_parameters: List[Tuple[float, int, float, int]],
     seed: int,
     cutoff: int,
-    init_obj_rate: float
+    init_obj_rate
 ):
     """
     Single run of (1+LL)-GA

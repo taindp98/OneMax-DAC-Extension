@@ -12,6 +12,3 @@ class PolicyConfig:
     def to_dict(self):
         """Convert the class attributes to a dictionary."""
         return self.__dict__
-
-    def __repr__(self):
-        return f"PolicyConfig(policy_name={self.policy_name}, net_arch={self.net_arch}, activation_fn={self.activation_fn})"

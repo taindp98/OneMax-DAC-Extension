@@ -11,7 +11,7 @@ This repository contains PyTorch implementation for our paper: **On the Importan
 - [Introduction](#introduction)
 - [Repository Structure](#repository-structure)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Quickstart](#usage)
 - [Examples](#examples)
 - [Algorithms](#algorithms)
 - [Results](#results)
@@ -44,7 +44,7 @@ OneMax-DAC/
 │   │   ├── eval.py                 # Contains functions to evaluate the policy
 │   │   ├── logger.py               # Module to monitor the training process
 │   │   └── utils.py                # Helping functions
-|   ├── envs/                       # Contains theorectical environments based on DACBench
+|   ├── env/                        # Contains theorectical environments based on DACBench
 │   │   └── onemax.py               # Module of OneMax problem
 ├── requirements.txt                # List of dependencies
 ├── README.md                       # Project readme file
@@ -53,14 +53,24 @@ OneMax-DAC/
 
 ## Installation
 
-Step-by-step instructions to install the necessary dependencies and set up the project. Include any prerequisites and how to install them.
+To re-produce this project, you will need to have the following dependencies installed:
+- Ubuntu 18.04.6 LTS
+- [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- Python 3.10
+- [PyTorch](https://pytorch.org/) (version 2.0 or later)
+
+After installing Miniconda, you can create a new environment and install the required packages using the following commands:
 
 ```bash
-# Clone the repository
+conda create -n onemaxdac python=3.10
+conda activate onemaxdac
+```
+For installing `torch`, refer this link: [INSTALLING PREVIOUS VERSIONS OF PYTORCH](https://pytorch.org/get-started/previous-versions/)
+
+then clone and install dependencies:
+```bash
 git clone https://github.com/taindp98/OneMax-DAC.git
-
-# Navigate to the project directory
 cd OneMax-DAC
-
-# Install required packages
 pip install -r requirements.txt
+````
+## Quickstart

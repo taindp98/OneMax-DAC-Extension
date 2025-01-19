@@ -4,6 +4,11 @@ from onemax_dac.configs.training_config import TrainingConfig
 from onemax_dac.configs.policy_config import PolicyConfig
 from onemax_dac.configs.env_config import EnvConfig
 
+def none_or_str(value):
+    if value.lower() == 'none':
+        return None
+    return value
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Train RL Agent with Custom Configurations")
 
@@ -25,7 +30,7 @@ def parse_args():
     parser.add_argument("--num_workers", type=int, default=1, help="Number of workers for data loading")
     parser.add_argument("--wandb", action="store_true", help="Enable logging to Weights & Biases")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
-    parser.add_argument("--fixed_shift", type=float, default=None, help="Fixed shift value for reward calculation")
+    parser.add_argument("--fixed_shift", type=none_or_str, default=None, help="Fixed shift value for reward calculation")
 
     # PolicyConfig arguments
     parser.add_argument("--policy_name", type=str, default="DDQN", help="Policy name")
@@ -38,7 +43,7 @@ def parse_args():
     parser.add_argument("--discrete_action", type=bool, default=True, help="Whether the action space is discrete")
     parser.add_argument("--action_choices", type=int, nargs="+", default=[], help="List of possible action choices")
     parser.add_argument("--reward_choice", type=str, default="imp_minus_evals_shifted", help="Reward choice type")
-    parser.add_argument("--init_obj_rate", type=float, default=0.5, help="Initial object value")
+    parser.add_argument("--init_obj_rate", type=none_or_str, default=0.5, help="Initial object value")
     
     # Parse the arguments
     args = parser.parse_args()

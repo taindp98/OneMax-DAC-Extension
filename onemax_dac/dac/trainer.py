@@ -85,8 +85,12 @@ class OneMaxDAC:
         else:
             self.shift = 0
         
-        print(f"🚀 Shift Constant: {self.shift}")
-    
+        self.logger.log_json(
+            phase="settings",
+            shift=self.shift,
+            action_choices=self.agent.env.action_choices,
+        )
+
     def training_step(self, batch_size: int = 2048):
         """
         Perform a single training step
@@ -133,9 +137,9 @@ class OneMaxDAC:
 
     def learn(self, verbose: int = 1):
         training_steps = self.training_config.max_steps - self.training_config.warmup_steps
-        progress_bar = tqdm(range(training_steps), ncols=100, disable=not verbose)
+        progress_bar = tqdm(range(training_steps), ncols=200, disable=not verbose)
 
-        best_mean_runtime = np.inf
+        best_val_rt = np.inf
         for step in progress_bar:
             self.agent.play_step(
                 net = self.q_online,
@@ -158,21 +162,24 @@ class OneMaxDAC:
                 )
                 ## csv logging action_indices, policy, runtimes, episode, step
                 self.logger.log_json(
+                    phase="trainval",
                     episode=self.agent.total_episodes,
                     step=step+self.training_config.warmup_steps,
                     action_indices=action_indices,
                     policy=policy,
                     runtimes=runtimes,
                 )
-                mean_runtime = np.mean(runtimes)
-                if mean_runtime < best_mean_runtime:
-                    best_mean_runtime = mean_runtime
+                mean_val_rt = np.mean(runtimes)
+                if mean_val_rt < best_val_rt:
+                    best_val_rt = mean_val_rt
                     torch.save(self.q_online.state_dict(), os.path.join(self.ckpt_dir, "best.pt"))
                 self.logger.update(
+                    step=step+self.training_config.warmup_steps,
+                    shift=self.shift,
                     loss=loss,
-                    best=best_mean_runtime
+                    best_val_rt=best_val_rt
                 )
-                progress_bar.set_description(f"[Training Progress]: {self.logger}")
+                progress_bar.set_description(f"[Training]: {self.logger}")
     
         self.test(k=5, n_test_episodes=1000, verbose=verbose)
         self.logger.close()
@@ -182,20 +189,19 @@ class OneMaxDAC:
     
     def test(self, k: int = 5, n_test_episodes: int = 1000, verbose: int = -1):
         ## load evaluation data and convert to pandas dataframe
-        evals_data = json.load(open(os.path.join(self.ckpt_dir, "evaluations.json")))
-        evals_data = pd.DataFrame(evals_data)
+        json_logdata = json.load(open(os.path.join(self.ckpt_dir, "evaluations.json")))
+        trainval_data = pd.DataFrame(json_logdata["trainval"])
         ## get top-k policy by min of average runtimes column
-        runtimes = evals_data["runtimes"].tolist()
+        runtimes = trainval_data["runtimes"].tolist()
         mean_runtimes = [np.mean(runtime) for runtime in runtimes]
         top_k_min_indices = np.argsort(mean_runtimes)[:k]
         ## get top-k policies
-        top_k_policies = evals_data.loc[top_k_min_indices, "policy"].tolist()
-        top_k_steps = evals_data.loc[top_k_min_indices, "step"].tolist()
+        top_k_policies = trainval_data.loc[top_k_min_indices, "policy"].tolist()
+        top_k_steps = trainval_data.loc[top_k_min_indices, "step"].tolist()
         init_obj_rate = self.agent.env.init_obj_rate
         problem_size = self.agent.env.n
         cutoff = int(0.8 * problem_size * problem_size)
-        
-        test_results = []
+
         ## compute continuous and discrete policy runtimes of theory
         continuous_runtimes = Parallel(n_jobs=self.training_config.num_workers)(
             delayed(onell_dynamic_theory)(
@@ -203,7 +209,7 @@ class OneMaxDAC:
                 discrete_portfolio=[],
                 seed=i,
                 cutoff=cutoff,
-                probability=init_obj_rate
+                init_obj_rate=init_obj_rate
             )
             for i in tqdm(
                 range(n_test_episodes),
@@ -211,6 +217,14 @@ class OneMaxDAC:
                 disable=not verbose,
                 ncols=100
             )
+        )
+        self.logger.log_json(
+            phase="test",
+            method="continuous_theory",
+            step=0,
+            mean_runtime=np.mean(continuous_runtimes),
+            std_runtime=np.std(continuous_runtimes),
+            runtimes=continuous_runtimes,
         )
         discrete_runtimes = Parallel(n_jobs=self.training_config.num_workers)(
             delayed(onell_dynamic_theory)(
@@ -218,7 +232,7 @@ class OneMaxDAC:
                 discrete_portfolio=self.agent.env.action_choices,
                 seed=i,
                 cutoff=cutoff,
-                probability=init_obj_rate
+                init_obj_rate=init_obj_rate
             )
             for i in tqdm(
                 range(n_test_episodes),
@@ -227,22 +241,15 @@ class OneMaxDAC:
                 ncols=100
             )
         )
-        test_results.append(
-            {
-                "step": "cont_theory",
-                "mean_runtime": np.mean(continuous_runtimes),
-                "std_runtime": np.std(continuous_runtimes),
-                "runtimes": continuous_runtimes
-            }
+        self.logger.log_json(
+            phase="test",
+            method="discrete_theory",
+            step=0,
+            mean_runtime=np.mean(discrete_runtimes),
+            std_runtime=np.std(discrete_runtimes),
+            runtimes=discrete_runtimes,
         )
-        test_results.append(
-            {
-                "step": "disc_theory",
-                "mean_runtime": np.mean(discrete_runtimes),
-                "std_runtime": np.std(discrete_runtimes),
-                "runtimes": discrete_runtimes
-            }
-        )
+        ## compute runtimes of top-k policies
         for idx, policy in enumerate(top_k_policies):
             runtimes = Parallel(n_jobs=self.training_config.num_workers)(
                 delayed(single_run_onell)(
@@ -259,17 +266,11 @@ class OneMaxDAC:
                     ncols=100
                 )
             )
-            mean_runtime = np.mean(runtimes)
-            std_runtime = np.std(runtimes)
-            test_results.append(
-                {
-                    "step": top_k_steps[idx],
-                    "mean_runtime": mean_runtime,
-                    "std_runtime": std_runtime,
-                    "runtimes": runtimes
-                }
+            self.logger.log_json(
+                phase="test",
+                method="dac",
+                step=top_k_steps[idx],
+                mean_runtime=np.mean(runtimes),
+                std_runtime=np.std(runtimes),
+                runtimes=runtimes,
             )
-        # Dumping the results to a JSON file
-        output_file_path = os.path.join(self.ckpt_dir, "test_results.json")
-        with open(output_file_path, "w") as json_file:
-            json.dump(test_results, json_file, indent=4)  # Pretty print with indentation

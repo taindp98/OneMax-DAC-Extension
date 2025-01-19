@@ -7,7 +7,7 @@ from onemax_dac.dac import (
     get_time_str,
     seed_everything,
 )
-from onemax_dac.envs import OneMax
+from onemax_dac.env import OneMax
 from torch import nn
 import numpy as np
 import os
@@ -18,11 +18,6 @@ from onemax_dac.dac.trainer import OneMaxDAC
 def main():
     # Parse the command-line arguments
     training_config, policy_config, env_config = parse_args()
-    
-    # Print the configurations to verify
-    print(f"Training Config: {training_config}")
-    print(f"Policy Config: {policy_config}")
-    print(f"Environment Config: {env_config}")
 
     global_rng = np.random.default_rng(training_config.seed)
 
@@ -65,6 +60,7 @@ def main():
         "PolicyConfig": policy_config.to_dict(),
         "EnvConfig": env_config.to_dict(),
     }
+    print(config_dict)
 
     with open(f"{save_dir}/config.yml", "w") as file:
         yaml.dump(config_dict, file, default_flow_style=False)
