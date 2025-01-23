@@ -7,7 +7,7 @@ name = "onemax_dac"
 version = "0.0.1"
 description = "a case study on OneMax with OLL-GA"
 authors = [
-  { name = "taindp98" },
+  { name = "xxx" },
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
