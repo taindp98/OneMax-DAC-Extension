@@ -86,24 +86,27 @@ def onell_dynamic_theory(
     total_evals = 1
     for _ in range(int(cutoff)):
         # mutation phase
-        lbd = np.sqrt(n / (n - f_x))
+        cont_lbd = np.sqrt(n / (n - f_x))
+        floor_lbd = np.floor(cont_lbd)
+        lbd = floor_lbd if cont_lbd - floor_lbd < 0.5 else floor_lbd + 1
+        lbd = int(lbd)
         ## quantize the lambda values to the nearest value in the discrete_portfolio
         if discrete_portfolio:
             lbd = min(discrete_portfolio, key=lambda x: abs(x - lbd))
         p = lbd / n
         xprime, f_xprime, ne1 = x.mutate(
-            p,
-            round(lbd),
+            p=p,
+            n_childs=lbd,
             rng=rng,
         )
         # crossover phase
         c = 1 / lbd
         y, f_y, ne2 = x.crossover(
-            xprime,
-            c,
-            round(lbd),
-            include_xprime_crossover,
-            count_different_inds_only,
+            xprime=xprime,
+            p=c,
+            n_childs=lbd,
+            include_xprime=include_xprime_crossover,
+            count_different_inds_only=count_different_inds_only,
             rng=rng,
         )
         # selection phase

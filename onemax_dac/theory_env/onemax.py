@@ -378,6 +378,10 @@ class OneMax(BinaryProblem):
         elif self.reward_choice == "imp_minus_evals_shifted":
             reward = (self.data.sum() - fitness_before_update) - n_evals
             reward += shift
+        elif self.reward_choice == "imp_minus_evals_problem_scaled_shifted":
+            reward = (self.data.sum() - fitness_before_update) - n_evals
+            reward = reward / self.n
+            reward += shift
         else:
             raise ValueError("Invalid reward choice")
         truncated = False

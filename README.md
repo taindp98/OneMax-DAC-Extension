@@ -69,8 +69,6 @@ For installing `torch`, refer this link: [INSTALLING PREVIOUS VERSIONS OF PYTORC
 
 then clone and install dependencies:
 ```bash
-git clone https://github.com/taindp98/OneMax-DAC.git
-cd OneMax-DAC
 pip install -r requirements.txt
 ````
 ## Quickstart
