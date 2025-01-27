@@ -127,7 +127,11 @@ Populating Buffer: 100%|██████████████████�
 Observation:
 - A dictionary containing the current running configurations.
 - A message of `Populating Buffer` indicating that the warm-up process is running within N steps.
-- Then the training process starts running with the remaining steps indicated by total steps minus warm-up steps.
+- Then the training process starts running with the remaining steps indicated by total steps minus warm-up steps. There is some information including: 
+    - step: current evaluation step
+    - shift: value of shifting
+    - loss: current training loss
+    - best_val_rt: best evaluated expected runtime
 
 ### Logs
 
