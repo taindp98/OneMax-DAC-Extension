@@ -12,12 +12,7 @@ This repository contains PyTorch implementation for our paper: **On the Importan
 - [Repository Structure](#repository-structure)
 - [Installation](#installation)
 - [Quickstart](#usage)
-- [Examples](#examples)
-- [Algorithms](#algorithms)
 - [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
 
 ## Introduction
 
@@ -44,12 +39,12 @@ OneMax-DAC/
 │   │   ├── eval.py                 # Contains functions to evaluate the policy
 │   │   ├── logger.py               # Module to monitor the training process
 │   │   └── utils.py                # Helping functions
-|   ├── env/                        # Contains theorectical environments based on DACBench
+|   ├── theory_env/                 # Contains theorectical environments based on DACBench
 │   │   └── onemax.py               # Module of OneMax problem
 ├── requirements.txt                # List of dependencies
 ├── README.md                       # Project readme file
 └── LICENSE                         # License for the project
-````
+```
 
 ## Installation
 
@@ -72,3 +67,75 @@ then clone and install dependencies:
 pip install -r requirements.txt
 ````
 ## Quickstart
+
+We divide our experiments into three groups:
+- Original reward function
+- Reward scaling
+- Reward shifting
+
+The implementation of these families of reward functions can be found in [onemax.py](onemax_dac/theory_env/onemax.py).
+
+### Experiment with the Original Reward Function
+
+```bash
+python onemax_dac/train.py \    ## Main Python script for training
+    --problem_size 100 \        ## Set problem size n=100
+    --reward_choice original \  ## Use original reward function
+    --seed 1 \                  ## Set random seed
+    --num_workers 4             ## Set number of CPUs for parallel processing
+```
+
+### Experiment with the Reward Scaling
+
+```bash
+python onemax_dac/train.py \    ## Main Python script for training
+    --problem_size 100 \        ## Set problem size n=100
+    --reward_choice scaling \  ## Use scaled reward function
+    --seed 1 \                  ## Set random seed
+    --num_workers 4             ## Set number of CPUs for parallel processing
+```
+
+### Experiment with the Reward Shifting
+
+```bash
+python onemax_dac/train.py \    ## Main Python script for training
+    --problem_size 100 \        ## Set problem size n=100
+    --reward_choice shifting \  ## Use reward shifting with fixed bias
+    --fixed_shift -3 \          ## Set value of bias
+    --seed 1 \                  ## Set random seed
+    --num_workers 4             ## Set number of CPUs for parallel processing
+```
+
+```bash
+python onemax_dac/train.py \    ## Main Python script for training
+    --problem_size 100 \        ## Set problem size n=100
+    --reward_choice shifting \  ## Use reward shifting with adaptive bias
+    --seed 1 \                  ## Set random seed
+    --num_workers 4             ## Set number of CPUs for parallel processing
+```
+
+## Results
+
+### Terminal
+After running, the terminal should look like this:
+
+```plaintext
+{'TrainingConfig': {'max_steps': 500000, 'buffer_size': 1000000, 'epsilon_start': 1.0, 'epsilon_end': 0.2, 'warmup_steps': 10000, 'batch_size': 2048, 'learning_rate': 0.001, 'gamma': 0.99, 'tau': 0.01, 'loss_fn': 'MSE', 'eval_interval': 2000, 'n_eval_episodes': 100, 'output_dir': 'outputs', 'accelerator': 'cpu', 'num_workers': 4, 'wandb': False, 'seed': 1, 'fixed_shift': None}, 'PolicyConfig': {'policy_name': 'DDQN', 'net_arch': [50, 50], 'activation_fn': 'ReLU'}, 'EnvConfig': {'problem_size': 100, 'state_dim': 2, 'discrete_action': True, 'action_choices': [], 'reward_choice': 'original', 'seed': 1, 'init_obj_rate': 0.5, 'kwargs': {}}}
+Populating Buffer: 100%|████████████████████████████████████| 10000/10000 [00:03<00:00, 2512.55it/s]
+[Training]: step: 14000.00 | shift: 0.00 | loss: 27.20 | best_val_rt: 689.01:   1%|▋                                                                             | 4110/490000 [00:25<50:44, 159.58it/s]
+```
+Observation:
+- A dictionary containing the current running configurations.
+- A message of `Populating Buffer` indicating that the warm-up process is running within N steps.
+- Then the training process starts running with the remaining steps indicated by total steps minus warm-up steps.
+
+### Logs
+
+During the process, we can monitor the logs by following the path `outputs/<date>_<time>/seed_<#>`. In this directory:
+
+```plaintext
+outputs/<date>_<time>/seed_<#>/
+├── config.yml                      # Training configuration is stored here
+├── evaluations.json                # Contains learned policies and ERTs from both evaluation and testing phases
+├── best.pt                         # Best checkpoint of the Q-network
+```

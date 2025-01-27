@@ -9,4 +9,8 @@ fi
 export WORKDIR=$(pwd)
 # Add the working directory to the PYTHONPATH
 export PYTHONPATH="$WORKDIR:$PYTHONPATH"
-python onemax_dac/train.py --problem_size 100 --max_steps 20000 --seed 1 --fixed_shift none --num_workers 4 --init_obj_rate none
+python onemax_dac/train.py \
+    --problem_size 100 \
+    --reward_choice original \
+    --seed 1 \
+    --num_workers 4

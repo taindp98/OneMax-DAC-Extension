@@ -8,7 +8,7 @@ class EnvConfig:
         state_dim: int,
         discrete_action: bool = True,
         action_choices: list = [],
-        reward_choice: str = "imp_minus_evals",
+        reward_choice: str = "original",
         seed: int = 0,
         init_obj_rate=0.5,
         **kwargs,

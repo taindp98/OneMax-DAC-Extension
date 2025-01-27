@@ -244,7 +244,7 @@ class OneMax(BinaryProblem):
         n: int,
         state_dim: int = 2,
         action_choices: list = [],
-        reward_choice: str = "imp_minus_evals_shifted",
+        reward_choice: str = "original",
         rng=np.random.default_rng(),
         init_obj_rate=None,
         **kwargs,
@@ -274,7 +274,6 @@ class OneMax(BinaryProblem):
             self.action_dim = int(np.ceil(np.log2(n)))
             self.action_choices = [2**i for i in range(self.action_dim)]
 
-        # print(f"🚀 Action choices: {self.action_choices}")
         self.state_dim = state_dim
 
     def eval(self):
@@ -359,26 +358,16 @@ class OneMax(BinaryProblem):
         n_evals = ne1 + ne2
         self.total_evals += n_evals
         self.data = max([self.data, y.data], key=lambda x: sum(x))
-        if self.reward_choice == "imp_div_evals":
-            reward = (self.data.sum() - fitness_before_update) / n_evals
-        elif self.reward_choice == "imp_minus_evals":
+        
+        if self.reward_choice == "original":
             reward = (self.data.sum() - fitness_before_update) - n_evals
-        elif self.reward_choice == "minus_evals":
-            reward = -n_evals
-        elif self.reward_choice == "minus_evals_normalised":
-            reward = -n_evals / self.max_evals
-        elif self.reward_choice == "imp_minus_evals_normalised":
-            reward = (self.data.sum() - fitness_before_update) - n_evals
-            reward = reward / self.max_evals
-        elif self.reward_choice == "imp":
-            reward = self.data.sum() - fitness_before_update
-        elif self.reward_choice == "imp_minus_evals_problem_scaled":
+        elif self.reward_choice == "scaling":
             reward = (self.data.sum() - fitness_before_update) - n_evals
             reward = reward / self.n
-        elif self.reward_choice == "imp_minus_evals_shifted":
+        elif self.reward_choice == "shifting":
             reward = (self.data.sum() - fitness_before_update) - n_evals
             reward += shift
-        elif self.reward_choice == "imp_minus_evals_problem_scaled_shifted":
+        elif self.reward_choice == "scaling_shifting":
             reward = (self.data.sum() - fitness_before_update) - n_evals
             reward = reward / self.n
             reward += shift

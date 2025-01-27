@@ -1,7 +1,7 @@
 class TrainingConfig:
     def __init__(
         self,
-        max_steps: int = 1000000,
+        max_steps: int = 500_000,
         buffer_size: int = 1_000_000,
         epsilon_start: float = 1.0,
         epsilon_end: float = 0.2,

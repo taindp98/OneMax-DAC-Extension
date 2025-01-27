@@ -16,7 +16,7 @@ def parse_args():
 
     # TrainingConfig arguments
     parser.add_argument(
-        "--max_steps", type=int, default=1000000, help="Max number of steps for training"
+        "--max_steps", type=int, default=500000, help="Max number of steps for training"
     )
     parser.add_argument(
         "--buffer_size", type=int, default=1000000, help="Size of the replay buffer"
@@ -100,7 +100,7 @@ def parse_args():
         "--action_choices", type=int, nargs="+", default=[], help="List of possible action choices"
     )
     parser.add_argument(
-        "--reward_choice", type=str, default="imp_minus_evals_shifted", help="Reward choice type"
+        "--reward_choice", type=str, default="shifting", help="Reward choice type"
     )
     parser.add_argument(
         "--init_obj_rate", type=none_or_str, default=0.5, help="Initial object value"
