@@ -33,7 +33,8 @@ def evaluate_policy(
         np.array([[problem_size, fx] for fx in range(0, problem_size)]),
         device=device,
     )
-    q_values = net(all_states)
+    with torch.no_grad():
+        q_values = net(all_states)
     action_indices = q_values.argmax(dim=1).cpu().numpy().tolist()
     policy = []
     for fitness, lambda_index in enumerate(action_indices):
@@ -99,7 +100,7 @@ def onell_dynamic_theory(
     cutoff: int = 1e6,
     count_different_inds_only=True,
     include_xprime_crossover=True,
-    init_obj_rate: float = 0.0,
+    init_obj_rate: float = 0.5,
 ):
     """
     (1+LL)-GA, dynamic version with theoretical results
@@ -107,8 +108,7 @@ def onell_dynamic_theory(
     quantize the lambda values to the nearest value in the discrete_portfolio
     """
     rng = np.random.Generator(np.random.MT19937(seed))
-    init_obj = int(init_obj_rate * n) if init_obj_rate is not None else None
-    x = OneMax(n=n, rng=rng, init_obj=init_obj)
+    x = OneMax(n=n, rng=rng, init_obj_rate=init_obj_rate)
     f_x = x.fitness
     total_evals = 1
     for _ in range(int(cutoff)):

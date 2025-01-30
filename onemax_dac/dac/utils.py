@@ -185,3 +185,30 @@ def plot_learning_curve(
     plt.grid(False)
     plt.tight_layout()
     plt.savefig(f"{save_dir}/learning_curve.pdf", dpi=600)
+
+
+def rename_state_dict(state_dict):
+    """
+    Renames the keys in a state_dict based on a given mapping.
+
+    Args:
+        state_dict (dict): The original state_dict with mismatched keys.
+        rename_map (dict): A dictionary mapping old keys to new keys.
+
+    Returns:
+        dict: A new state_dict with renamed keys.
+    """
+    # Define the key mapping based on your error message
+    rename_map = {
+        "fc1.weight": "q_net.0.weight",
+        "fc1.bias": "q_net.0.bias",
+        "fc2.weight": "q_net.2.weight",
+        "fc2.bias": "q_net.2.bias",
+        "fc3.weight": "q_net.4.weight",
+        "fc3.bias": "q_net.4.bias",
+    }
+    new_state_dict = {}
+    for old_key, value in state_dict.items():
+        new_key = rename_map.get(old_key, old_key)  # Rename if in map, else keep original
+        new_state_dict[new_key] = value
+    return new_state_dict

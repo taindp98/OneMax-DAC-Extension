@@ -247,14 +247,12 @@ class OneMax(BinaryProblem):
         reward_choice: str = "original",
         rng=np.random.default_rng(),
         init_obj_rate=None,
-        **kwargs,
     ):
         self.n = n
         self.init_obj_rate = init_obj_rate
         self.init_obj = int(init_obj_rate * n) if init_obj_rate is not None else None
         self.rng = rng
         self.reward_choice = reward_choice
-        self.kwargs = kwargs
 
         if self.init_obj is None:
             super(OneMax, self).__init__(n=self.n, rng=self.rng)

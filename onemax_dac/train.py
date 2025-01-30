@@ -6,6 +6,7 @@ from onemax_dac.dac import (
     Logger,
     get_time_str,
     seed_everything,
+    rename_state_dict,
 )
 from onemax_dac.theory_env import OneMax
 from torch import nn
@@ -17,7 +18,6 @@ from onemax_dac.dac.trainer import OneMaxDAC
 
 
 def main():
-    # Parse the command-line arguments
     training_config, policy_config, env_config = parse_args()
 
     global_rng = np.random.default_rng(training_config.seed)
@@ -48,7 +48,6 @@ def main():
         training_config.output_dir, "checkpoints", get_time_str(), f"seed_{training_config.seed}"
     )
     os.makedirs(save_dir, exist_ok=True)
-    # Dump both configurations
     config_dict = {
         "TrainingConfig": training_config.to_dict(),
         "PolicyConfig": policy_config.to_dict(),

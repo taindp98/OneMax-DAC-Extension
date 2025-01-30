@@ -4,9 +4,9 @@
     </p>
 </h1>
 
-This repository contains PyTorch implementation for our paper: **On the Importance of Reward Design in Reinforcement Learning-based Dynamic Algorithm Configuration: A Case Study on OneMax with (1+($\lambda$,$\lambda$))-GA**
+This repository contains the implementation for paper: **On the Importance of Reward Design in Reinforcement Learning-based Dynamic Algorithm Configuration: A Case Study on OneMax with (1+($\lambda$,$\lambda$))-GA**
 
-## Table of Contents
+## 🗒️ Table of Contents
 
 - [Introduction](#introduction)
 - [Repository Structure](#repository-structure)
@@ -14,23 +14,20 @@ This repository contains PyTorch implementation for our paper: **On the Importan
 - [Quickstart](#usage)
 - [Results](#results)
 
-## Introduction
+## 💡 Introduction
 
 We propose applying RL to control the population size of the (1+($\lambda$,$\lambda$))-GA optimizing OneMax problem.
 
-## Repository Structure
+## 🎯 Repository Structure
 
 Outline the structure of repository.
 
 ```plaintext
 OneMax-DAC/
-├── notebooks/                      # Running examples
-│   ├── train.ipynb
-│   └── test.ipynb
+├── notebooks/                     
+│   └── test.ipynb                  # Testing on-the-fly using trained DDQNs
 ├── onemax_dac/                     # Source code for the project
-│   ├── __init__.py
 │   ├── train.py                    # Script to train models
-│   ├── evaluate.py                 # Script to evaluate models
 │   ├── dac/                        # Main components of DAC employed in this project
 │   │   ├── trainer.py              # Module to train DAC
 │   │   ├── buffer.py               # Module to store the experiences
@@ -46,7 +43,7 @@ OneMax-DAC/
 └── LICENSE                         # License for the project
 ```
 
-## Installation
+## ⚙️ Installation
 
 To re-produce this project, you will need to have the following dependencies installed:
 - Ubuntu 18.04.6 LTS
@@ -66,8 +63,18 @@ then clone and install dependencies:
 ```bash
 pip install -r requirements.txt
 ````
-## Quickstart
+## 🚀 Quickstart
+### Testing
+We provide the best checkpoints of DDQNs, which are trained using the best settings of reward functions in certain problem sizes, [here](resources/ddqn_ckpt).
 
+To replicate the results reported in the paper, follow the notebook [test.ipynb](notebooks/test.ipynb):
+1. Initialize the DDQN and OneMax environment objects.
+2. Load the trained checkpoint properly.
+3. Run (1+($\lambda$,$\lambda$))-GA and observe the ERT.
+
+**Note**: Please make sure you have the notebook kernel installed with the necessary packages.
+
+### Training
 We divide our experiments into three groups:
 - Original reward function
 - Reward scaling
@@ -114,7 +121,7 @@ python onemax_dac/train.py \    ## Main Python script for training
     --num_workers 4             ## Set number of CPUs for parallel processing
 ```
 
-## Results
+## 📊 Results
 
 ### Terminal
 After running, the terminal should look like this:

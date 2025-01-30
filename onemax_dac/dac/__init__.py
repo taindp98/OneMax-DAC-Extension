@@ -13,4 +13,5 @@ from onemax_dac.dac.utils import (
     seed_everything,
     plot_learning_curve,
     plot_policies,
+    rename_state_dict,
 )
