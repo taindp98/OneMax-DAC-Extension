@@ -4,7 +4,7 @@
     </p>
 </h1>
 
-This repository contains the implementation for paper: **On the Importance of Reward Design in Reinforcement Learning-based Dynamic Algorithm Configuration: A Case Study on OneMax with (1+($\lambda$,$\lambda$))-GA**
+This repository contains the implementation for paper: **On the Importance of Reward Design in Reinforcement Learning-based Dynamic Algorithm Configuration: A Case Study on OneMax with (1+($\lambda$, $\lambda$))-GA**
 
 ## 🗒️ Table of Contents
 
@@ -16,7 +16,7 @@ This repository contains the implementation for paper: **On the Importance of Re
 
 ## 💡 Introduction
 
-We propose applying RL to control the population size of the (1+($\lambda$,$\lambda$))-GA optimizing OneMax problem.
+We propose applying RL to control the population size of the (1+($\lambda$, $\lambda$))-GA optimizing OneMax problem.
 
 ## 🎯 Repository Structure
 
@@ -73,7 +73,7 @@ We provide the best checkpoints of DDQNs, which are trained using the best setti
 To replicate the results reported in the paper, follow the notebook [test.ipynb](notebooks/test.ipynb):
 1. Initialize the DDQN and OneMax environment objects.
 2. Load the trained checkpoint properly.
-3. Run (1+($\lambda$,$\lambda$))-GA and observe the ERT.
+3. Run (1+($\lambda$, $\lambda$))-GA and observe the ERT.
 
 **Note**: Please make sure you have the notebook kernel installed with the necessary packages.
 
