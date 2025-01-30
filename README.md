@@ -27,7 +27,7 @@ OneMax-DAC/
 ├── notebooks/                     
 │   └── test.ipynb                  # Testing on-the-fly using trained DDQNs
 ├── resources/                      # Additional resources for this project
-│   ├── ddqn_ckpt                   # Contains DDQNs checkpoints for all problem sizes
+│   ├── ddqn_ckpts                   # Contains DDQNs checkpoints for all problem sizes
 │   ├── other_methods               # Contains irace-based tuning and optimal policies
 ├── onemax_dac/                     # Source code for the project
 │   ├── train.py                    # Script to train models
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 ````
 ## 🚀 Quickstart
 ### Testing
-We provide the best checkpoints of DDQNs, which are trained using the best settings of reward functions in certain problem sizes, [here](resources/ddqn_ckpt).
+We provide the best checkpoints of DDQNs, which are trained using the best settings of reward functions in certain problem sizes, [here](resources/ddqn_ckpts).
 
 To replicate the results reported in the paper, follow the notebook [test.ipynb](notebooks/test.ipynb):
 1. Initialize the DDQN and OneMax environment objects.

@@ -3,7 +3,7 @@
 There are 7 checkpoints corresponding to the total number of examined problem sizes.
 ```plaintext
 resources/
-├── ddqn_ckpt/                      
+├── ddqn_ckpts/                      
 │   ├── best_model_shifting_n50.pt                    
 │   ├── best_model_shifting_n100.pt                   
 │   ├── best_model_shifting_n200.pt                    
