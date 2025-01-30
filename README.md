@@ -26,6 +26,9 @@ Outline the structure of repository.
 OneMax-DAC/
 ├── notebooks/                     
 │   └── test.ipynb                  # Testing on-the-fly using trained DDQNs
+├── resources/                      # Additional resources for this project
+│   ├── ddqn_ckpt                   # Contains DDQNs checkpoints for all problem sizes
+│   ├── other_methods               # Contains irace-based tuning and optimal policies
 ├── onemax_dac/                     # Source code for the project
 │   ├── train.py                    # Script to train models
 │   ├── dac/                        # Main components of DAC employed in this project
