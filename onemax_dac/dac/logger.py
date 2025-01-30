@@ -31,17 +31,12 @@ class Logger:
                 name=run_id,
                 config=config,
             )
-            # # define our custom x axis metric
-            wandb.define_metric("episode")
-            # # set all other train/ metrics to use this step
             wandb.define_metric("Loss/episode", step_metric="episode")
             wandb.define_metric("Reward/episode", step_metric="episode")
             self.rw_cnt = 0
 
         self.writer = SummaryWriter(self.save_dir)
         self.metrics = {}
-
-        ## log JSON
         self.log_json_fpath = os.path.join(self.save_dir, "evaluations.json")
 
     def log_scalar(self, tag, value, step):
@@ -76,15 +71,19 @@ class Logger:
         """
         self.writer.add_image(tag, figure, step, dataformats="NCHW")
         figure = figure.squeeze(0)
-        # Convert the tensor to a NumPy array
         figure_np = figure.permute(1, 2, 0).cpu().numpy()
-        # Convert the NumPy array to a PIL image
         pil_image = Image.fromarray(figure_np)
         pil_image.save(os.path.join(out_dir, f"{tag}.png"))
         if self.use_wandb:
             wandb.log({tag: wandb.Image(pil_image)}, step=step)
 
     def log_dict(self, dictionary, step):
+        """
+        Log a dictionary of scalar values.
+        Args:
+            dictionary (dict): The dictionary of scalar values.
+            step (int): The step at which the scalars were recorded.
+        """
         for tag, value in dictionary.items():
             self.log_scalar(tag, value, step)
 
@@ -104,7 +103,7 @@ class Logger:
                 self.metrics[key] = {"total": 0.0, "count": 0, "last": 0.0}
             self.metrics[key]["total"] += value
             self.metrics[key]["count"] += 1
-            self.metrics[key]["last"] = value  # Store the most recent value
+            self.metrics[key]["last"] = value
 
     def average(self, metric_name):
         """
@@ -129,11 +128,15 @@ class Logger:
         return {key: self.metrics[key]["last"] for key in self.metrics}
 
     def reset(self):
-        """Reset all tracked metrics."""
+        """
+        Reset all tracked metrics.
+        """
         self.metrics = {}
 
     def __repr__(self):
-        """String representation of the most recent metric values."""
+        """
+        String representation of the most recent metric values.
+        """
         last_values = self.get_all_last_values()
         return " | ".join(f"{key}: {value:.2f}" for key, value in last_values.items())
 
@@ -144,40 +147,34 @@ class Logger:
             kwargs: Metric names and their corresponding values.
         """
 
-        # Function to convert any numpy types to native Python types
         def convert_numpy_types(obj):
-            if isinstance(obj, np.int64):  # Check for numpy int64
+            if isinstance(obj, np.int64):
                 return int(obj)
-            elif isinstance(obj, np.float64):  # Check for numpy float64
+            elif isinstance(obj, np.float64):
                 return float(obj)
             elif isinstance(
                 obj, np.ndarray
-            ):  # If it's a NumPy array, recursively apply conversion
-                return obj.tolist()  # Convert NumPy array to list
-            elif isinstance(obj, list):  # If it's a list, apply conversion to each item
+            ):
+                return obj.tolist()
+            elif isinstance(obj, list):
                 return [convert_numpy_types(item) for item in obj]
-            return obj  # If it's a regular Python type, return it as is
+            return obj
 
-        # Convert all the kwargs values to native Python types
         kwargs = {k: convert_numpy_types(v) for k, v in kwargs.items()}
 
-        # Ensure the file exists, if not create an empty list
         if not os.path.exists(self.log_json_fpath):
             init_data = {phase: []}
             with open(self.log_json_fpath, mode="w") as file:
-                json.dump(init_data, file)  # Start with an empty list
+                json.dump(init_data, file) 
 
-        # Load existing data from the JSON file
         with open(self.log_json_fpath, mode="r") as file:
             data = json.load(file)
             if phase not in data:
                 data[phase] = []
             data_phase = data[phase]
 
-        # Append the new metrics to the list
         data_phase.append(kwargs)
         data[phase] = data_phase
 
-        # Write the updated list back to the file
         with open(self.log_json_fpath, mode="w") as file:
-            json.dump(data, file, indent=4)  # Pretty print with indentation
+            json.dump(data, file, indent=4)

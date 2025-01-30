@@ -5,6 +5,9 @@ import os
 import numpy as np
 import json
 import pandas as pd
+from matplotlib import pyplot as plt
+import seaborn as sns
+from prettytable import PrettyTable
 
 
 def soft_update(target, source, tau: float = 0.01):
@@ -23,7 +26,6 @@ def get_time_str():
     Get the current time as a string
     """
     now = datetime.now()
-    # Format the date and time separately
     date_str = now.strftime("%Y%m%d")
     time_str = now.strftime("%H%M%S")
     time_str = f"{date_str}_{time_str}"
@@ -51,67 +53,137 @@ def seed_everything(seed=42):
     torch.backends.cudnn.benchmark = True
 
 
-# def plot_policy(results_fpath: str) -> torch.Tensor:
-#     evals_data = json.load(open(results_fpath))
-#     evals_data = pd.DataFrame(evals_data)
+def plot_policies(problem_size: int, policies: dict, save_dir: str, segment: float = 0.5):
+    """
+    Plot the policies of the different methods
+    Args:
+        problem_size: The size of the problem
+        policies: The policies of the different methods
+        save_dir: The directory to save the plot
+        segment: The segment of the policy to plot
+    """
+    sns.set(style="white")
+    plt.figure(figsize=(5, 4))
+    x = np.arange(problem_size)
+    x = x[int(len(x) * (1 - segment)) :]
+    colors = sns.color_palette("tab10", len(policies))
+    for i, (m_name, policy) in enumerate(list(policies.items())):
+        segment_policy = policy[int(len(policy) * (1 - segment)) :]
+        plt.plot(
+            x,
+            segment_policy,
+            label=m_name,
+            c=colors[i],
+        )
+    plt.title(f"n={problem_size}")
+    plt.xlabel("Fitness")
+    plt.ylabel("$\lambda$")
+    plt.grid(True)
+    plt.legend(loc="upper left")
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/policy.pdf", dpi=600)
 
-#     # optimal policy
-#     optimal_policy = eval_data["optimal_policies"][i]
-#     optimal_runtime = eval_data["optimal_runtime_means"][i]
 
-#     # mean runtime of learnt policies
-#     eval_runtime_means = [ls[i] for ls in eval_data["eval_runtime_means"]]
+def plot_learning_curve(
+    json_logdata: dict, save_dir: str, baseline: str = "discrete_theory", display_hr: bool = False
+):
+    """
+    Plot the learning curve of the DAC agent
+    Args:
+        json_logdata: The log data
+        save_dir: The directory to save the plot
+        baseline: The baseline to compare the learning curve with
+        display_hr: Display the hitting rate
+    """
+    sns.set(style="white")
+    plt.figure(figsize=(5, 4), facecolor="white")
 
-#     # best policy
-#     best_mean_runtime_id = np.argmin(eval_runtime_means)
-#     best_mean_runtime = np.min(eval_runtime_means)
+    assert baseline in ["continuous_theory", "discrete_theory"]
+    trainval_data = pd.DataFrame(json_logdata["trainval"])
+    test_data = pd.DataFrame(json_logdata["test"])
+    baseline_mean = test_data[test_data["method"] == baseline]["mean_runtime"].values[0]
+    baseline_std = test_data[test_data["method"] == baseline]["std_runtime"].values[0]
 
-#     best_policy = eval_data["eval_policies"][best_mean_runtime_id][
-#         i
-#     ]  ## shape: (train_steps, 1, problem_size)
-#     best_gap = (best_mean_runtime - optimal_runtime) / optimal_runtime
+    eval_timesteps = trainval_data["step"].values
+    eval_timesteps = eval_timesteps / 1000
+    eval_runtime_means = np.array(trainval_data["runtimes"].tolist()).mean(axis=1)
+    eval_runtime_stds = np.array(trainval_data["runtimes"].tolist()).std(axis=1)
 
-#     if off_env_eval:
-#         last_eval_data = np.load(
-#             results_fpath.replace("evaluations", "evaluations_last"), allow_pickle=True
-#         )
-#         last_runtime_mean_id = np.argmin(last_eval_data["eval_runtime_means"])
-#         last_mean_runtime = np.min(last_eval_data["eval_runtime_means"])
-#         last_policy = last_eval_data["eval_policies"][last_runtime_mean_id]
-#         last_gap = (last_mean_runtime - optimal_runtime) / optimal_runtime
+    close_to_theory = np.where(eval_runtime_means <= baseline_mean + 0.25 * baseline_std)[0]
 
-#     # plot the best policy
-#     plt.figure(figsize=(10, 6), facecolor="white")
+    eval_runtime_means = np.asarray([v for v in eval_runtime_means])
+    eval_runtime_stds = np.asarray([v if v != np.inf else 0 for v in eval_runtime_stds])
 
-#     if len(best_policy.shape) != 1:
-#         best_policy = best_policy[:, 1]
-#     plt.plot(range(n), optimal_policy, label="optimal", c="r")
-#     plt.plot(range(n), best_policy, label="best", c="b")
-#     if off_env_eval:
-#         if len(last_policy.shape) != 1:
-#             last_policy = last_policy[:, 1]
-#         plt.plot(range(n), last_policy, label="last", c="orange", linestyle="--")
-#     plt.legend()
-#     if off_env_eval:
-#         text = f"Opt / Best: {optimal_runtime:.2f} / {best_mean_runtime:.2f} ({best_gap*100:.2f})% | Opt / Last: {optimal_runtime:.2f} / {last_mean_runtime:.2f} ({last_gap*100:.2f}%)"
+    color_opt = "tab:red"
+    _ = plt.step(
+        eval_timesteps,
+        [baseline_mean] * len(eval_timesteps),
+        where="post",
+        label=baseline,
+        ls="--",
+        color=color_opt,
+        linewidth=1.5,
+    )
+    u = [baseline_mean + 0.25 * baseline_std] * len(eval_timesteps)
+    l = [baseline_mean - 0.25 * baseline_std] * len(eval_timesteps)
+    _ = plt.fill_between(eval_timesteps, u, l, alpha=0.2, step="post", color=color_opt)
 
-#     else:
-#         text = f"Opt / Best: {optimal_runtime:.2f} / {best_mean_runtime:.2f} ({best_gap*100:.2f})%"
-#     plt.title(text)
-#     if verbose:
-#         print(text)
-#     else:
-#         # Save the plot to a BytesIO object
-#         buf = io.BytesIO()
-#         plt.savefig(buf, format="png")
-#         buf.seek(0)
-#         plt.close()  # Close the figure to avoid overlap
-#         image = Image.open(buf)
-#         image = np.array(image)
-#         if image.shape[2] == 4:  # If the image has an alpha channel, remove it
-#             image = image[:, :, :3]
-#         image = (
-#             torch.tensor(image).permute(2, 0, 1).unsqueeze(0)
-#         )  # Convert to (1, C, H, W) format
+    color_rl = "tab:blue"
+    _ = plt.plot(
+        eval_timesteps,
+        eval_runtime_means,
+        label="dac",
+        color=color_rl,
+        linewidth=1.5,
+    )
 
-#         return image
+    _ = plt.scatter(
+        eval_timesteps[close_to_theory],
+        eval_runtime_means[close_to_theory],
+        color="green",
+    )
+    if display_hr:
+        segment_hittings = []
+        ratios = [1.0, 0.5, 0.25]
+        for ratio in ratios:
+            ert_means = eval_runtime_means[int(len(eval_runtime_means) * (1 - ratio)) :]
+            num_hittings = len(np.where(ert_means <= baseline_mean + 0.25 * baseline_std)[0])
+            ratio = num_hittings / len(ert_means)
+            segment_hittings.append([ratio, num_hittings, len(ert_means)])
+
+        table = PrettyTable()
+        table.field_names = ["Training Period", "Hitting Rate"]
+        y_labels = ["0-100", "50-100", "75-100"]
+        for i, ratio in enumerate(ratios):
+            text_hitting_ratio = f"{segment_hittings[i][0]:.2f}"
+            text_division = f"{segment_hittings[i][1]}/{segment_hittings[i][2]}"
+            table.add_row([y_labels[i], f"{text_division} (={text_hitting_ratio})"])
+
+        table_text = table.get_string()
+
+        plt.text(
+            0.37,
+            0.445,
+            table_text,
+            fontsize=9, 
+            transform=plt.gcf().transFigure,
+            ha="left",
+            va="top",
+            fontfamily="monospace",
+            bbox=dict(
+                facecolor="white", edgecolor="black", boxstyle="round,pad=0.3", alpha=0.5
+            )
+        )
+
+    _ = plt.xlim([0, max(eval_timesteps)])
+    _ = plt.ylim(
+        [0.8 * min((min(eval_runtime_means), baseline_mean)), 1.2 * max(eval_runtime_means)]
+    )
+    plt.xlabel("Step (in thousands)")
+    plt.ylabel("ERT")
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.legend(loc="upper right", prop={"size": 12, "weight": "normal"})
+    plt.grid(False)
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/learning_curve.pdf", dpi=600)

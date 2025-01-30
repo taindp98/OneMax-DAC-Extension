@@ -67,6 +67,12 @@ def parse_args():
         default=None,
         help="Fixed shift value for reward calculation",
     )
+    parser.add_argument(
+        "--eval_fpath",
+        type=none_or_str,
+        default=None,
+        help="Filepath to load checkpoint for testing",
+    )
 
     # PolicyConfig arguments
     parser.add_argument("--policy_name", type=str, default="DDQN", help="Policy name")
@@ -99,9 +105,7 @@ def parse_args():
     parser.add_argument(
         "--action_choices", type=int, nargs="+", default=[], help="List of possible action choices"
     )
-    parser.add_argument(
-        "--reward_choice", type=str, default="shifting", help="Reward choice type"
-    )
+    parser.add_argument("--reward_choice", type=str, default="shifting", help="Reward choice type")
     parser.add_argument(
         "--init_obj_rate", type=none_or_str, default=0.5, help="Initial object value"
     )
@@ -129,6 +133,7 @@ def parse_args():
         wandb=args.wandb,
         seed=args.seed,
         fixed_shift=args.fixed_shift,
+        eval_fpath=args.eval_fpath,
     )
 
     policy_config = PolicyConfig(

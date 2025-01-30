@@ -135,11 +135,13 @@ Observation:
 
 ### Logs
 
-During the process, we can monitor the logs by following the path `outputs/<date>_<time>/seed_<#>`. In this directory:
+During the process, we can monitor the logs by following the path `outputs/checkpoints/<date>_<time>/seed_<#>`. In this directory:
 
 ```plaintext
-outputs/<date>_<time>/seed_<#>/
+outputs/checkpoints/<date>_<time>/seed_<#>/
 ├── config.yml                      # Training configuration is stored here
 ├── evaluations.json                # Contains learned policies and ERTs from both evaluation and testing phases
 ├── best.pt                         # Best checkpoint of the Q-network
+├── learning_curve.pdf              # Evaluated ERT under 100 runs during training
+└── policy.pdf                      # Policy comparison
 ```

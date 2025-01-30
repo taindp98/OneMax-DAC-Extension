@@ -207,7 +207,7 @@ class BinaryProblem:
 
         n_evals = 0
         ls = rng.binomial(self.n, p, size=n_childs)
-        for l in ls:  # noqa: E741
+        for l in ls:
             locs_xprime = rng.choice(self.n, l, replace=False)
             locs_x = np.full(self.n, True)
             locs_x[locs_xprime] = False
@@ -358,7 +358,7 @@ class OneMax(BinaryProblem):
         n_evals = ne1 + ne2
         self.total_evals += n_evals
         self.data = max([self.data, y.data], key=lambda x: sum(x))
-        
+
         if self.reward_choice == "original":
             reward = (self.data.sum() - fitness_before_update) - n_evals
         elif self.reward_choice == "scaling":

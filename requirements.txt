@@ -9,3 +9,4 @@ wandb==0.18.5
 joblib==1.4.2
 torchsummary==1.5.1
 stable-baselines3==2.4.1
+prettytable==3.13.0

@@ -77,8 +77,6 @@ def main():
         ckpt_dir=save_dir,
         training_config=training_config,
     )
-    # Here you can continue with the logic to initialize the agent and start training
-    # agent = RLAgent(training_config, policy_config, env_config)
     seed_everything(training_config.seed)
     trainer.learn(verbose=1)
 

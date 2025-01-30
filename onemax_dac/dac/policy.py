@@ -41,11 +41,9 @@ class QNetwork(nn.Module):
 
 
 if __name__ == "__main__":
-    # Test QNetwork
     state_dim = 2
     action_dim = 5
     net = QNetwork(state_dim, action_dim)
     print(net)
-    # Test forward
     obs = torch.rand(1, state_dim)
     print(net(obs))

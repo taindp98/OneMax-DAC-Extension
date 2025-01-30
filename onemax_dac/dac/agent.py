@@ -53,11 +53,6 @@ class Agent:
 
         """
         action = self.get_action(self.state, net, epsilon, device)
-        # do step in the environment
-        # So, in the deprecated version of gym, the env.step() has 4 values unpacked which is
-        #     obs, reward, done, info = env.step(action)
-        # In the latest version of gym, the step() function returns back an additional variable which is truncated.
-        #     obs, reward, terminated, truncated, info = env.step(action)
         new_state, reward, _, done, _ = self.env.step(
             action_index=action,
             shift=shift,

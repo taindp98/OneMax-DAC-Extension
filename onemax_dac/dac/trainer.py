@@ -11,6 +11,9 @@ from onemax_dac.dac import (
     evaluate_policy,
     single_run_onell,
     onell_dynamic_theory,
+    get_theory_policy,
+    plot_policies,
+    plot_learning_curve,
 )
 from joblib import Parallel, delayed
 import pandas as pd
@@ -154,22 +157,23 @@ class OneMaxDAC:
                 batch_size=self.training_config.batch_size,
             )
             if step % self.training_config.eval_interval == 0:
-                action_indices, policy, runtimes = evaluate_policy(
+                action_indices, parameters, runtimes = evaluate_policy(
                     net=self.q_online,
                     env=self.agent.env,
                     n_eval_episodes=self.training_config.n_eval_episodes,
                     num_workers=self.training_config.num_workers,
                     init_obj_rate=self.agent.env.init_obj_rate,
                     verbose=False,
+                    verbose_tag="[Testing]",
                     device=self.device,
                 )
-                ## csv logging action_indices, policy, runtimes, episode, step
+                policy = [self.agent.env.action_choices[idx] for idx in action_indices]
                 self.logger.log_json(
                     phase="trainval",
                     episode=self.agent.total_episodes,
                     step=step + self.training_config.warmup_steps,
-                    action_indices=action_indices,
                     policy=policy,
+                    parameters=parameters,
                     runtimes=runtimes,
                 )
                 mean_val_rt = np.mean(runtimes)
@@ -185,27 +189,32 @@ class OneMaxDAC:
                 progress_bar.set_description(f"[Training]: {self.logger}")
 
         self.test(k=5, n_test_episodes=1000, verbose=verbose)
+        self.visualize()
         self.logger.close()
 
     def __repr__(self):
         return "onemaxdac"
 
     def test(self, k: int = 5, n_test_episodes: int = 1000, verbose: int = -1):
-        ## load evaluation data and convert to pandas dataframe
+        """
+        Evaluate the continuous and discrete theory and top-k policies
+        Args:
+            k: number of top-k policies to evaluate
+            n_test_episodes: number of test episodes
+            verbose: verbosity level
+        """
         json_logdata = json.load(open(os.path.join(self.ckpt_dir, "evaluations.json")))
         trainval_data = pd.DataFrame(json_logdata["trainval"])
-        ## get top-k policy by min of average runtimes column
         runtimes = trainval_data["runtimes"].tolist()
         mean_runtimes = [np.mean(runtime) for runtime in runtimes]
         top_k_min_indices = np.argsort(mean_runtimes)[:k]
-        ## get top-k policies
+        top_k_parameters = trainval_data.loc[top_k_min_indices, "parameters"].tolist()
         top_k_policies = trainval_data.loc[top_k_min_indices, "policy"].tolist()
         top_k_steps = trainval_data.loc[top_k_min_indices, "step"].tolist()
         init_obj_rate = self.agent.env.init_obj_rate
         problem_size = self.agent.env.n
         cutoff = int(0.8 * problem_size * problem_size)
 
-        ## compute continuous and discrete policy runtimes of theory
         continuous_runtimes = Parallel(n_jobs=self.training_config.num_workers)(
             delayed(onell_dynamic_theory)(
                 n=self.agent.env.n,
@@ -215,13 +224,21 @@ class OneMaxDAC:
                 init_obj_rate=init_obj_rate,
             )
             for i in tqdm(
-                range(n_test_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
+                range(n_test_episodes),
+                desc="[Evaluate Continuous Theory]",
+                disable=not verbose,
+                ncols=100,
             )
+        )
+        cont_policy, cont_parameters = get_theory_policy(
+            problem_size=problem_size, action_choices=[]
         )
         self.logger.log_json(
             phase="test",
             method="continuous_theory",
             step=0,
+            policy=cont_policy,
+            parameters=cont_parameters,
             mean_runtime=np.mean(continuous_runtimes),
             std_runtime=np.std(continuous_runtimes),
             runtimes=continuous_runtimes,
@@ -235,30 +252,38 @@ class OneMaxDAC:
                 init_obj_rate=init_obj_rate,
             )
             for i in tqdm(
-                range(n_test_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
+                range(n_test_episodes),
+                desc="[Evaluate Discrete Theory]",
+                disable=not verbose,
+                ncols=100,
             )
+        )
+        disc_policy, disc_parameters = get_theory_policy(
+            problem_size=problem_size, action_choices=self.agent.env.action_choices
         )
         self.logger.log_json(
             phase="test",
             method="discrete_theory",
             step=0,
+            policy=disc_policy,
+            parameters=disc_parameters,
             mean_runtime=np.mean(discrete_runtimes),
             std_runtime=np.std(discrete_runtimes),
             runtimes=discrete_runtimes,
         )
-        ## compute runtimes of top-k policies
-        for idx, policy in enumerate(top_k_policies):
+        
+        for idx, parameters in enumerate(top_k_parameters):
             runtimes = Parallel(n_jobs=self.training_config.num_workers)(
                 delayed(single_run_onell)(
                     n=self.agent.env.n,
-                    oll_parameters=policy,
+                    oll_parameters=parameters,
                     seed=i,
                     cutoff=cutoff,
                     init_obj_rate=init_obj_rate,
                 )
                 for i in tqdm(
                     range(n_test_episodes),
-                    desc="Parallel Progress",
+                    desc="[Testing Top-K Policies]",
                     disable=not verbose,
                     ncols=100,
                 )
@@ -267,7 +292,39 @@ class OneMaxDAC:
                 phase="test",
                 method="dac",
                 step=top_k_steps[idx],
+                policy=top_k_policies[idx],
+                parameters=parameters,
                 mean_runtime=np.mean(runtimes),
                 std_runtime=np.std(runtimes),
                 runtimes=runtimes,
             )
+
+    def visualize(self):
+        """
+        Plot the training curve and best policy
+        """
+        json_logdata = json.load(open(os.path.join(self.ckpt_dir, "evaluations.json")))
+        test_data = pd.DataFrame(json_logdata["test"])
+        best_dac_policy = test_data.iloc[
+            test_data[test_data["method"] == "dac"]["mean_runtime"].idxmin()
+        ]["policy"]
+        continuous_policy = test_data[test_data["method"] == "continuous_theory"]["policy"].values[
+            0
+        ]
+        discrete_policy = test_data[test_data["method"] == "discrete_theory"]["policy"].values[0]
+        policies = {
+            "continuous": continuous_policy,
+            "discrete": discrete_policy,
+            "dac": best_dac_policy,
+        }
+        plot_policies(
+            problem_size=self.agent.env.n,
+            policies=policies,
+            save_dir=self.ckpt_dir,
+        )
+        plot_learning_curve(
+            json_logdata=json_logdata,
+            save_dir=self.ckpt_dir,
+            baseline="discrete_theory",
+            display_hr=False,
+        )

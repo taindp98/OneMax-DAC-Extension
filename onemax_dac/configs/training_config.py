@@ -19,6 +19,7 @@ class TrainingConfig:
         wandb: bool = False,
         seed: int = 0,
         fixed_shift=None,
+        eval_fpath=None,
     ):
         self.max_steps = max_steps
         self.buffer_size = buffer_size
@@ -38,6 +39,7 @@ class TrainingConfig:
         self.wandb = wandb
         self.seed = seed
         self.fixed_shift = fixed_shift
+        self.eval_fpath = eval_fpath
 
     def to_dict(self):
         """Convert the class attributes to a dictionary."""

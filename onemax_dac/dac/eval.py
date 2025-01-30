@@ -15,6 +15,7 @@ def evaluate_policy(
     num_workers: int = 1,
     init_obj_rate=0.5,
     verbose: int = 1,
+    verbose_tag: str = "Parallel Progress",
     device: torch.device = torch.device("cpu"),
 ):
     """
@@ -57,11 +58,38 @@ def evaluate_policy(
             cutoff=cutoff,
             init_obj_rate=init_obj_rate,
         )
-        for i in tqdm(
-            range(n_eval_episodes), desc="Parallel Progress", disable=not verbose, ncols=100
-        )
+        for i in tqdm(range(n_eval_episodes), desc=verbose_tag, disable=not verbose, ncols=100)
     )
     return action_indices, policy, runtimes
+
+
+def get_theory_policy(problem_size: int, action_choices: list = []):
+    """
+    Get the theoretical policy for the given problem size
+    """
+    policy = []
+    parameters = []
+    if action_choices:
+        ## discrete theory policy
+        for i in range(problem_size):
+            cont_lbd = np.sqrt(problem_size / (problem_size - i))
+            lbd = min(action_choices, key=lambda x: abs(x - cont_lbd))
+            mutation_rate = lbd / problem_size
+            crossover_rate = 1 / lbd
+            parameters.append([mutation_rate, lbd, crossover_rate, lbd])
+            policy.append(lbd)
+    else:
+        ## continuous theory policy
+        for i in range(problem_size):
+            cont_lbd = np.sqrt(problem_size / (problem_size - i))
+            floor_lbd = np.floor(cont_lbd)
+            lbd = floor_lbd if cont_lbd - floor_lbd < 0.5 else floor_lbd + 1
+            lbd = int(lbd)
+            mutation_rate = lbd / problem_size
+            crossover_rate = 1 / lbd
+            parameters.append([mutation_rate, lbd, crossover_rate, lbd])
+            policy.append(lbd)
+    return policy, parameters
 
 
 def onell_dynamic_theory(
@@ -82,7 +110,6 @@ def onell_dynamic_theory(
     init_obj = int(init_obj_rate * n) if init_obj_rate is not None else None
     x = OneMax(n=n, rng=rng, init_obj=init_obj)
     f_x = x.fitness
-    # total number of solution evaluations
     total_evals = 1
     for _ in range(int(cutoff)):
         # mutation phase
@@ -90,16 +117,16 @@ def onell_dynamic_theory(
         floor_lbd = np.floor(cont_lbd)
         lbd = floor_lbd if cont_lbd - floor_lbd < 0.5 else floor_lbd + 1
         lbd = int(lbd)
-        ## quantize the lambda values to the nearest value in the discrete_portfolio
         if discrete_portfolio:
             lbd = min(discrete_portfolio, key=lambda x: abs(x - lbd))
         p = lbd / n
+        ## mutation phase
         xprime, f_xprime, ne1 = x.mutate(
             p=p,
             n_childs=lbd,
             rng=rng,
         )
-        # crossover phase
+        ## crossover phase
         c = 1 / lbd
         y, f_y, ne2 = x.crossover(
             xprime=xprime,
@@ -109,7 +136,7 @@ def onell_dynamic_theory(
             count_different_inds_only=count_different_inds_only,
             rng=rng,
         )
-        # selection phase
+        ## selection phase
         if f_x <= f_y:
             x = y
             f_x = f_y
@@ -143,16 +170,16 @@ def single_run_onell(
     total_evals = 1
     for _ in range(int(cutoff)):
         mutation_rate, mutation_size, crossover_rate, crossover_size = oll_parameters[f_x]
-        # mutation phase
+        ## mutation phase
         xprime, f_xprime, ne1 = x.mutate(p=mutation_rate, n_childs=mutation_size, rng=rng)
-        # crossover phase
+        ## crossover phase
         y, f_y, ne2 = x.crossover(
             xprime=xprime,
             p=crossover_rate,
             n_childs=crossover_size,
             rng=rng,
         )
-        # selection phase
+        ## selection phase
         if f_x <= f_y:
             x = y
             f_x = f_y
