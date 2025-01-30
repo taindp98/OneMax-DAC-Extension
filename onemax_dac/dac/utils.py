@@ -198,7 +198,6 @@ def rename_state_dict(state_dict):
     Returns:
         dict: A new state_dict with renamed keys.
     """
-    # Define the key mapping based on your error message
     rename_map = {
         "fc1.weight": "q_net.0.weight",
         "fc1.bias": "q_net.0.bias",
@@ -209,6 +208,6 @@ def rename_state_dict(state_dict):
     }
     new_state_dict = {}
     for old_key, value in state_dict.items():
-        new_key = rename_map.get(old_key, old_key)  # Rename if in map, else keep original
+        new_key = rename_map.get(old_key, old_key)
         new_state_dict[new_key] = value
     return new_state_dict
