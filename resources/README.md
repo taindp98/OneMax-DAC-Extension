@@ -21,7 +21,7 @@ resources/
 │   └── optimal_policies.pt                    
 ```
 We compare our RL-based DAC with two approaches:
-1. IRACE cascading tuning approach [(Chen et al., 2023)](#reference) for 3 problem sizes `n=[500, 1000, 2000]` following the format
+1. IRACE cascading tuning approach [(Chen et al., 2023)](https://dl.acm.org/doi/abs/10.1145/3594805.3607127) for 3 problem sizes `n=[500, 1000, 2000]` following the format
 ```json
 {
     "500": {            ## problem size
@@ -31,21 +31,22 @@ We compare our RL-based DAC with two approaches:
 }
 ```
 
-2. Optimal policy [(Chen et al., 2023)](#reference) containing full settings `n=[50, 100, 200, 300, 500, 1000, 2000]`.
+2. Optimal policy [(Chen et al., 2023)](https://dl.acm.org/doi/abs/10.1145/3594805.3607127) containing full settings `n=[50, 100, 200, 300, 500, 1000, 2000]`.
 ```json
 {
     "50": [],       ## contains a policy
     "100": [],
 }
 ```
-
-## Reference
-```plaintext
-@inproceedings{chen2023using,
-  title={Using automated algorithm configuration for parameter control},
-  author={Chen, Deyao and Buzdalov, Maxim and Doerr, Carola and Dang, Nguyen},
-  booktitle={Proceedings of the 17th ACM/SIGEVO Conference on Foundations of Genetic Algorithms},
-  pages={38--49},
-  year={2023}
-}
+To test the performance of the optimal policy, we suggest a Python implementation like this:
+```python
+## policy: list of lambdas
+## n: is the problem size
+for i in range(n):
+    cont_lbd = policy[i]
+    floor_lbd = np.floor(cont_lbd)
+    lbd = floor_lbd if cont_lbd - floor_lbd < 0.5 else floor_lbd + 1
+    lbd = int(lbd)
+    mutation_rate = lbd / n
+    crossover_rate = 1 / lbd
 ```
