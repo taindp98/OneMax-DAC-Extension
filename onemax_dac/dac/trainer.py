@@ -271,7 +271,7 @@ class OneMaxDAC:
             std_runtime=np.std(discrete_runtimes),
             runtimes=discrete_runtimes,
         )
-        
+
         for idx, parameters in enumerate(top_k_parameters):
             runtimes = Parallel(n_jobs=self.training_config.num_workers)(
                 delayed(single_run_onell)(

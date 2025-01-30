@@ -152,9 +152,7 @@ class Logger:
                 return int(obj)
             elif isinstance(obj, np.float64):
                 return float(obj)
-            elif isinstance(
-                obj, np.ndarray
-            ):
+            elif isinstance(obj, np.ndarray):
                 return obj.tolist()
             elif isinstance(obj, list):
                 return [convert_numpy_types(item) for item in obj]
@@ -165,7 +163,7 @@ class Logger:
         if not os.path.exists(self.log_json_fpath):
             init_data = {phase: []}
             with open(self.log_json_fpath, mode="w") as file:
-                json.dump(init_data, file) 
+                json.dump(init_data, file)
 
         with open(self.log_json_fpath, mode="r") as file:
             data = json.load(file)

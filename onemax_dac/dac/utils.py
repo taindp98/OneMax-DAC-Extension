@@ -165,14 +165,12 @@ def plot_learning_curve(
             0.37,
             0.445,
             table_text,
-            fontsize=9, 
+            fontsize=9,
             transform=plt.gcf().transFigure,
             ha="left",
             va="top",
             fontfamily="monospace",
-            bbox=dict(
-                facecolor="white", edgecolor="black", boxstyle="round,pad=0.3", alpha=0.5
-            )
+            bbox=dict(facecolor="white", edgecolor="black", boxstyle="round,pad=0.3", alpha=0.5),
         )
 
     _ = plt.xlim([0, max(eval_timesteps)])
