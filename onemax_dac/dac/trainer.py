@@ -83,7 +83,7 @@ class OneMaxDAC:
                 device=self.device,
             )
 
-        if "shifted" in self.agent.env.reward_choice:
+        if self.agent.env.reward_choice == "shifting":
             if self.training_config.fixed_shift:
                 self.shift = float(self.training_config.fixed_shift)
             else:
