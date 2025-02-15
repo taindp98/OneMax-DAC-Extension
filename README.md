@@ -11,8 +11,7 @@ This repository contains the implementation for paper: **On the Importance of Re
 - [Introduction](#introduction)
 - [Repository Structure](#repository-structure)
 - [Installation](#installation)
-- [Quickstart](#usage)
-- [Results](#results)
+- [Quickstart](#quickstart)
 
 ## 💡 Introduction
 
@@ -131,7 +130,6 @@ python onemax_dac/train.py \    ## Main Python script for training
     --num_workers 4             ## Set number of CPUs for parallel processing
 ```
 
-## 📊 Results
 
 ### Terminal
 After running, the terminal should look like this:
