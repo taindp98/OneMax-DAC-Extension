@@ -16,7 +16,14 @@ This repository contains the implementation for paper: **On the Importance of Re
 
 ## 💡 Introduction
 
-We propose applying RL to control the population size of the (1+($\lambda$, $\lambda$))-GA optimizing OneMax problem.
+We propose applying RL to control the population size of the (1+($\lambda$, $\lambda$))-GA optimizing the OneMax problem. We use the number of evaluations (#Evals) at each step to validate how well the RL-based policy can choose the proper $\lambda$ to maximize the number of 1s in a given binary string.
+
+We provide an example to visualize improvements in a problem of size 100 (using a 10×10 grid to save space), comparing two controllers: an RL-based policy and a random policy. Blue cells denote the 1s bit, while red cells represent the 0s bit. The optimal state occurs when the grid is completely filled with blue cells.
+
+|RL-based Policy|Random Policy|
+|--|--|
+|![assets/ddqn_n100.gif](assets/ddqn_n100.gif)|![assets/random_n100.gif](assets/random_n100.gif)|
+
 
 ## 🎯 Repository Structure
 

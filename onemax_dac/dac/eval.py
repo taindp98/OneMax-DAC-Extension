@@ -7,13 +7,13 @@ from torch import nn
 from onemax_dac.dac.utils import to_tensor
 import torch
 
-
 def evaluate_policy(
     net: nn.Module,
     env: OneMax,
     n_eval_episodes: int,
     num_workers: int = 1,
     init_obj_rate=0.5,
+    use_policy: bool = True,
     verbose: int = 1,
     verbose_tag: str = "Parallel Progress",
     device: torch.device = torch.device("cpu"),
@@ -26,16 +26,23 @@ def evaluate_policy(
         n_eval_episodes: number of episodes to evaluate
         num_workers: number of parallel workers
         init_obj_rate: initial objective rate
+        use_policy: whether to use the policy or not
         verbose: verbosity level
     """
     problem_size = env.n
-    all_states = to_tensor(
-        np.array([[problem_size, fx] for fx in range(0, problem_size)]),
-        device=device,
-    )
-    with torch.no_grad():
-        q_values = net(all_states)
-    action_indices = q_values.argmax(dim=1).cpu().numpy().tolist()
+    if use_policy:
+        all_states = to_tensor(
+            np.array([[problem_size, fx] for fx in range(0, problem_size)]),
+            device=device,
+        )
+        with torch.no_grad():
+            q_values = net(all_states)
+        action_indices = q_values.argmax(dim=1).cpu().numpy().tolist()
+    else:
+        action_indices = np.random.choice(
+            np.arange(len(env.action_choices)),
+            size=problem_size
+        )
     policy = []
     for fitness, lambda_index in enumerate(action_indices):
         lambda_ = env.action_choices[lambda_index]
@@ -51,7 +58,7 @@ def evaluate_policy(
         )
     cutoff = int(0.8 * problem_size * problem_size)
 
-    runtimes = Parallel(n_jobs=num_workers)(
+    outputs = Parallel(n_jobs=num_workers)(
         delayed(single_run_onell)(
             n=problem_size,
             oll_parameters=policy,
@@ -61,7 +68,10 @@ def evaluate_policy(
         )
         for i in tqdm(range(n_eval_episodes), desc=verbose_tag, disable=not verbose, ncols=100)
     )
-    return action_indices, policy, runtimes
+    runtimes = [output[0] for output in outputs]
+    data_changes = [output[1] for output in outputs]
+    costs = [output[2] for output in outputs]
+    return action_indices, policy, runtimes, data_changes, costs
 
 
 def get_theory_policy(problem_size: int, action_choices: list = []):
@@ -168,6 +178,8 @@ def single_run_onell(
     f_x = x.fitness
     # total number of solution evaluations
     total_evals = 1
+    data_changes = []
+    costs = []
     for _ in range(int(cutoff)):
         mutation_rate, mutation_size, crossover_rate, crossover_size = oll_parameters[f_x]
         ## mutation phase
@@ -184,7 +196,8 @@ def single_run_onell(
             x = y
             f_x = f_y
         total_evals = total_evals + ne1 + ne2
-
+        data_changes.append(x.data.astype(int))
+        costs.append(ne1 + ne2)
         if total_evals >= cutoff or x.is_optimal():
             break
-    return total_evals
+    return total_evals, data_changes, costs

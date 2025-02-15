@@ -157,7 +157,7 @@ class OneMaxDAC:
                 batch_size=self.training_config.batch_size,
             )
             if step % self.training_config.eval_interval == 0:
-                action_indices, parameters, runtimes = evaluate_policy(
+                action_indices, parameters, runtimes, _, _ = evaluate_policy(
                     net=self.q_online,
                     env=self.agent.env,
                     n_eval_episodes=self.training_config.n_eval_episodes,
@@ -273,7 +273,7 @@ class OneMaxDAC:
         )
 
         for idx, parameters in enumerate(top_k_parameters):
-            runtimes = Parallel(n_jobs=self.training_config.num_workers)(
+            outputs = Parallel(n_jobs=self.training_config.num_workers)(
                 delayed(single_run_onell)(
                     n=self.agent.env.n,
                     oll_parameters=parameters,
@@ -288,6 +288,7 @@ class OneMaxDAC:
                     ncols=100,
                 )
             )
+            runtimes = [output[0] for output in outputs]
             self.logger.log_json(
                 phase="test",
                 method="dac",
