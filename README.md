@@ -120,7 +120,7 @@ To replicate the results reported in the paper, follow the notebook [test.ipynb]
 We divide our experiments into three groups:
 - DDQN: using naive, scaled, and adaptive shifted reward functions
 - PPO: using naive, and scaled reward functions
-- HPO: tuning hyperparameters of PPO using Hypersweeper framework.
+- HPO: tuning hyperparameters of PPO using [Hypersweeper](https://github.com/automl/hypersweeper) framework.
 
 The implementation of these families of reward functions can be found in [onemax.py](dacbench/envs/theory.py).
 
