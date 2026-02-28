@@ -184,7 +184,6 @@ def plot_hittings(results_fpath: str) -> torch.Tensor:
     # some values are not inf but also very large, we will set them as inf
     inf_val = min(inf_val, max(eval_runtime_means))
     # replace inf with inf_val (for plotting only)
-    ## TODO: unify INFINITY concept
     inf_concept = np.inf
     eval_runtime_means = np.asarray(
         [v if v != inf_concept else inf_val for v in eval_runtime_means]

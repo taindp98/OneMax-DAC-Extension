@@ -12,10 +12,9 @@ sns.set_style("white")
 
 def calculate_auc(n, eval_runtime_means, opt_mean, exp):
     """
-    TODO: check inf value in off-env
+    Calculate the area under the curve (AUC) of the log-scaled gap between the eval runtime means and the optimal mean.
+    The gap is calculated as eval_runtime_means - opt_mean, and we take the log of the gap to calculate the AUC.
     """
-    # infinite values marked as 10 times the time limit used during training
-    # in_inf = float(1999) if "tdqn" in exp else np.inf
     in_inf = np.inf
     eval_runtime_means = [v if abs(v) <= 0.8 * n * n else in_inf for v in eval_runtime_means]
     # print(f"eval_runtime_means: {eval_runtime_means}")
@@ -65,7 +64,6 @@ def get_method_auc(results_fpath, exp, norm: bool = True, ratio: float = 1.0):
     eval_runtime_means = [np.absolute(v) for v in eval_runtime_means]
 
     ## get samples from the last ratio of the evaluations
-    ## TODO: consider the case where the last ratio is 0
     eval_runtime_means = eval_runtime_means[int(len(eval_runtime_means) * (1 - ratio)) :]
     # eval_runtime_means = eval_runtime_means[
     #     : int(len(eval_runtime_means) * ratio)
@@ -222,7 +220,6 @@ def plot_hittings(
     # some values are not inf but also very large, we will set them as inf
     inf_val = min(inf_val, max(eval_runtime_means))
     # replace inf with inf_val (for plotting only)
-    ## TODO: unify INFINITY concept
     inf_concept = (0.8 * n * n - 1) if off_env_eval else np.inf
     eval_runtime_means = np.asarray(
         [v if v != inf_concept else inf_val for v in eval_runtime_means]
