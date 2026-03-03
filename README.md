@@ -154,7 +154,7 @@ For the HPO framework setting, please refer to `onemax_dac/configs/hpo_ppo_7.yam
 
 ### Logs
 
-During the process, we can monitor the logs by following the path `outputs/checkpoints/<date>_<time>/seed_<#>`. In this directory:
+During the process, we monitor the logs by following the path `outputs/checkpoints/<date>_<time>/seed_<#>`. In this directory:
 
 ```plaintext
 outputs/<config-name>/<specific-setting>/<time>_seed_<#>/
