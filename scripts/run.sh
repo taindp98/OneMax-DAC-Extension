@@ -9,6 +9,6 @@ fi
 export WORKDIR=$(pwd)
 # Add the working directory to the PYTHONPATH
 export PYTHONPATH="$WORKDIR:$PYTHONPATH"
-python onemax_dac/train_ddqn.py -c onemax_dac/configs/onemax_n100_ddqn.yml -s 1 --n-cpus 10 --gamma 0.99 --out-dir outputs 
-# python onemax_dac/train_ppo.py --setting-file onemax_dac/configs/onemax_n100_ppo_sc.yml --seed 1 -c 10 --out-dir outputs 
-# python onemax_dac/hpo_ppo.py -m --config-name hpo_ppo_7
+# python onemax_dac/train_ddqn.py -c onemax_dac/configs/onemax_n100_ddqn_as.yml -s 1 --n-cpus 4 --gamma 0.99 --out-dir outputs 
+# python onemax_dac/train_ppo.py --setting-file onemax_dac/configs/onemax_n100_ppo.yml --seed 1 -c 4 --out-dir outputs 
+python onemax_dac/hpo_ppo.py -m --config-name hpo_ppo_7

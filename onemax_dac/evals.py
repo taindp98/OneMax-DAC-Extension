@@ -2,7 +2,7 @@ import os
 from typing import Optional
 import numpy as np
 from joblib import Parallel, delayed
-from utils import make_env
+from onemax_dac.utils import make_env
 from tqdm import tqdm
 
 
@@ -112,7 +112,7 @@ def ollga_mp_single_run(
     return total_evals
 
 
-class DDQNFactEval:
+class DDQNEval:
     def __init__(
         self,
         agent,
@@ -176,11 +176,21 @@ class DDQNFactEval:
         self.eval_runtime_stds = []
         self.eval_n_decisions = []
 
-        if hasattr(agent.eval_env, "action_choices"):
-            self.action_choices = agent.eval_env.action_choices
-            self.discrete_portfolio = True
-        else:
-            self.discrete_portfolio = False
+        # This evaluator only supports OLLGAFactL1Theory: a single-dimensional discrete action
+        # space where the agent picks one lambda out of a portfolio, and lambda1 == lambda2 with
+        # both the mutation and crossover rates fixed to 1. Every config in onemax_dac/configs
+        # uses this benchmark.
+        assert agent.bench_params["name"] == "OLLGAFactL1Theory", (
+            "ERROR: DDQNEval only supports the OLLGAFactL1Theory benchmark, got "
+            f"{agent.bench_params['name']}"
+        )
+        assert hasattr(
+            agent.eval_env, "action_choices"
+        ), "ERROR: DDQNEval requires an env with a discrete action portfolio"
+        assert (
+            obs_space == 2
+        ), f"ERROR: DDQNEval expects the 'n,f(x)' observation space, got {obs_space} dims"
+        self.action_choices = agent.eval_env.action_choices
 
         if self.verbose >= 1:
             print("Optimal policies:")
@@ -195,14 +205,9 @@ class DDQNFactEval:
             policy = [
                 int(np.ceil(v)) if v - np.floor(v) > 0.5 else int(np.floor(v)) for v in policy
             ]
-            if self.discrete_portfolio:
-                portfolio = [
-                    k
-                    for k in sorted(agent.eval_env.action_choices[inst_id][0], reverse=True)
-                    if k < n
-                ]
-                ## map the optimal policy to the nearest element in discrete portfolio
-                policy = [min(portfolio, key=lambda x: abs(x - v)) for v in policy]
+            portfolio = [k for k in sorted(self.action_choices[inst_id][0], reverse=True) if k < n]
+            ## map the optimal policy to the nearest element in discrete portfolio
+            policy = [min(portfolio, key=lambda x: abs(x - v)) for v in policy]
 
             self.optimal_policies.append(policy)
             # calculate the runtime of the optimal policy
@@ -239,106 +244,33 @@ class DDQNFactEval:
             inst = self.instance_set[inst_id]
             n = inst["size"]
 
+            # each entry of policy_unclipped is an index into the lambda portfolio
             policy_unclipped = self.agent.get_actions_for_all_states(n)
-            if self.discrete_portfolio:
-                policy = []
-                for fitness, sel in enumerate(policy_unclipped):
-                    if self.bench_params["name"] == "OLLGAFactTheory":
-                        lbd1_idx, mr_idx, lbd2_idx, cr_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = self.action_choices[inst_id][1][mr_idx]
-                        lambda2 = self.action_choices[inst_id][2][lbd2_idx]
-                        crossover_rate = self.action_choices[inst_id][3][cr_idx]
-                    elif self.bench_params["name"] == "OLLGAFactL1L2Theory":
-                        lbd1_idx, lbd2_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = 1
-                        lambda2 = self.action_choices[inst_id][1][lbd2_idx]
-                        crossover_rate = 1
-                    elif self.bench_params["name"] == "OLLGAFactL1L2MTheory":
-                        lbd1_idx, mutation_idx, lbd2_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = self.action_choices[inst_id][1][mutation_idx]
-                        lambda2 = self.action_choices[inst_id][2][lbd2_idx]
-                        crossover_rate = 1
-                    elif self.bench_params["name"] == "OLLGAFactL1L2CTheory":
-                        lbd1_idx, lbd2_idx, cr_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = 1
-                        lambda2 = self.action_choices[inst_id][1][lbd2_idx]
-                        crossover_rate = self.action_choices[inst_id][2][cr_idx]
-                    elif self.bench_params["name"] == "OLLGAFactL1Theory":
-                        lambda1 = self.action_choices[inst_id][0][sel[0]]
-                        mutation_rate = 1
-                        lambda2 = lambda1
-                        crossover_rate = 1
-                    elif self.bench_params["name"] == "OLLGAFactL1MTheory":
-                        lbd1_idx, mutation_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = self.action_choices[inst_id][1][mutation_idx]
-                        lambda2 = lambda1
-                        crossover_rate = 1
-                    elif self.bench_params["name"] == "OLLGAFactL1CTheory":
-                        lbd1_idx, crossover_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        crossover_rate = self.action_choices[inst_id][1][crossover_idx]
-                        lambda2 = lambda1
-                        mutation_rate = 1
-                    elif self.bench_params["name"] == "OLLGAFactL1MCTheory":
-                        lbd1_idx, mutation_idx, crossover_idx = sel
-                        lambda1 = self.action_choices[inst_id][0][lbd1_idx]
-                        mutation_rate = self.action_choices[inst_id][1][mutation_idx]
-                        crossover_rate = self.action_choices[inst_id][2][crossover_idx]
-                        lambda2 = lambda1
-                    else:
-                        raise NotImplementedError
-                    policy.append(
-                        [
-                            np.int64(lambda1),
-                            np.float64(mutation_rate),
-                            np.int64(lambda2),
-                            np.float64(crossover_rate),
-                        ]
-                    )
-            # policy = [np.clip(v, 1, n) for v in policy_unclipped]
+            policy = []
+            for sel in policy_unclipped:
+                lambda1 = np.int64(self.action_choices[inst_id][0][sel])
+                # OLLGAFactL1Theory: lambda2 follows lambda1, both rates are fixed to 1
+                policy.append([lambda1, np.float64(1), lambda1, np.float64(1)])
 
             policies.append(policy)
             policies_unclipped.append(policy_unclipped)
 
             # calculate runtime of current policy
-            if self.obs_space == 2:
-                # set self.eval_env's instance_set to a single instance (inst_id)
-                self.eval_env.instance_id_list = [inst_id]
-                self.eval_env.instance_index = 0
-                self.eval_env.instance_set = {inst_id: inst}
-                runtimes = Parallel(n_jobs=self.n_cpus)(
-                    delayed(ollga_mp_single_run)(
-                        self.bench_params, self.eval_env_params, policy, i
-                    )
-                    for i in range(self.n_eval_episodes_per_instance)
-                )
+            # set self.eval_env's instance_set to a single instance (inst_id)
+            self.eval_env.instance_id_list = [inst_id]
+            self.eval_env.instance_index = 0
+            self.eval_env.instance_set = {inst_id: inst}
+            runtimes = Parallel(n_jobs=self.n_cpus)(
+                delayed(ollga_mp_single_run)(self.bench_params, self.eval_env_params, policy, i)
+                for i in range(self.n_eval_episodes_per_instance)
+            )
 
-                runtime_mean = np.mean(runtimes)
-                runtime_std = np.std(runtimes)
+            runtime_mean = np.mean(runtimes)
+            runtime_std = np.std(runtimes)
 
-                self.eval_env.instance_id_list = self.inst_ids
-                self.eval_env.instance_set = self.instance_set
-            else:
-                episode_rewards = []
-                for ep_id in range(self.n_eval_episodes_per_instance):
-                    s, _ = self.eval_env.reset()
-                    ep_r = 0  # episode's total reward
-                    d = False
-                    cutoff = 0.8 * n * n
-                    while True:
-                        actions, _ = self.agent.policy.predict([s])
-                        ns, r, tr, d, _ = self.eval_env.step(actions[0])
-                        ep_r += r
-                        if d or ep_r >= cutoff:
-                            break
-                    episode_rewards.append(abs(ep_r))
-                runtime_mean = np.mean(episode_rewards)
-                runtime_std = np.std(episode_rewards)
+            self.eval_env.instance_id_list = self.inst_ids
+            self.eval_env.instance_set = self.instance_set
+
             runtime_means.append(runtime_mean)
             runtime_stds.append(runtime_std)
 
@@ -352,6 +284,7 @@ class DDQNFactEval:
         if self.detailed_log_path is not None:
             # save eval statistics
             self.eval_policies.append(policies)
+            self.eval_policies_unclipped.append(policies_unclipped)
             self.eval_runtime_means.append(runtime_means)
             self.eval_runtime_stds.append(runtime_stds)
 

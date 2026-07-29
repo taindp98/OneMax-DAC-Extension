@@ -114,7 +114,14 @@ To replicate the results reported in the paper, follow the notebook [test.ipynb]
 2. Load the trained checkpoint properly.
 3. Run (1+($\lambda$, $\lambda$))-GA and observe the ERT.
 
-**Note**: Please make sure you have the notebook kernel installed with the necessary packages.
+**Note**: Please make sure you have the notebook kernel installed with the necessary packages. `ipykernel` is already included in `requirements.txt`, so you only need to register the `onemaxdac` environment as a Jupyter kernel once:
+
+```bash
+conda activate onemaxdac
+python -m ipykernel install --user --name=onemaxdac
+```
+
+Then select the `onemaxdac` kernel when opening the notebook.
 
 ### Training
 We divide our experiments into three groups:
@@ -123,6 +130,8 @@ We divide our experiments into three groups:
 - HPO: tuning hyperparameters of PPO using [Hypersweeper](https://github.com/automl/hypersweeper) framework.
 
 The implementation of these families of reward functions can be found in [onemax.py](dacbench/envs/theory.py).
+
+**Note**: Before running any of the commands below, please refer to [scripts/run.sh](scripts/run.sh) for the expected runtime environment. It adds the project root to `PYTHONPATH`, which is required for the local packages (e.g. the vendored Hydra plugins under `hydra_plugins/`) to be discovered. Running the scripts without this setup may lead to import errors.
 
 ### Experiment with DDQN
 
