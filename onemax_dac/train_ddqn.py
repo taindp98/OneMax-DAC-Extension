@@ -14,7 +14,7 @@ import shutil
 from onemax_dac.plot import plot_results
 from onemax_dac.loggers import Logger
 from joblib import Parallel, delayed
-from onemax_dac.evals import DDQNFactEval, ollga_mp_single_run
+from onemax_dac.evals import DDQNEval, ollga_mp_single_run
 import argparse
 from onemax_dac.utils import (
     make_env,
@@ -52,18 +52,22 @@ def hard_update(target, source):
     soft_update(target, source, 1.0)
 
 
-class BranchingQNetwork(nn.Module):
+class QNetwork(nn.Module):
     """
-    Branching Q-Network for multi-dimensional discrete action spaces.
-    Implements dueling architecture optionally.
-    Ref: https://arxiv.org/pdf/1711.08946.pdf
-    Github: https://github.com/MoMe36/BranchingDQN
+    Q-Network for a single-dimensional discrete action space.
+
+    The agent picks exactly one action index per state (the lambda value of the
+    (1+(lambda, lambda))-GA), so the network has a single head emitting one
+    Q-value per action choice. Dueling architecture is applied optionally.
+
+    Layers are named fc1/fc2/fc3 so that a non-dueling network is
+    state-dict-compatible with the released checkpoints in
+    `resources/ddqn_ckpts`.
     """
 
     def __init__(
         self,
         state_dim: int,
-        action_dim: int,
         n_actions: int,
         net_arch: list = [50, 50],
         use_dueling: bool = True,
@@ -71,36 +75,29 @@ class BranchingQNetwork(nn.Module):
         super().__init__()
 
         self.state_dim = state_dim
-        self.action_dim = action_dim
         self.n_actions = n_actions
         self.use_dueling = use_dueling
 
-        self.model = nn.Sequential(
-            nn.Linear(state_dim, net_arch[0]),
-            nn.ReLU(),
-            nn.Linear(net_arch[0], net_arch[1]),
-            nn.ReLU(),
-        )
+        self.fc1 = nn.Linear(state_dim, net_arch[0])
+        self.fc2 = nn.Linear(net_arch[0], net_arch[1])
+        self.fc3 = nn.Linear(net_arch[1], n_actions)
 
         if self.use_dueling:
             self.value_head = nn.Linear(net_arch[1], 1)
-        self.adv_heads = nn.ModuleList(
-            [nn.Linear(net_arch[1], action_dim) for i in range(n_actions)]
-        )
 
     def forward(self, x):
         """
         Forward pass through the network.
         Args:
-            x (torch.Tensor): Input state tensor.
+            x (torch.Tensor): Input state tensor of shape (batch, state_dim).
         Returns:
-            torch.Tensor: Q-values for each action branch.
+            torch.Tensor: Q-values of shape (batch, n_actions).
         """
-        out = self.model(x)
-        advs = torch.stack([l(out) for l in self.adv_heads], dim=1)
+        out = F.relu(self.fc2(F.relu(self.fc1(x))))
+        advs = self.fc3(out)
         if self.use_dueling:
             value = self.value_head(out)
-            q_val = value.unsqueeze(2) + advs - advs.mean(2, keepdim=True)
+            q_val = value + advs - advs.mean(dim=1, keepdim=True)
         else:
             q_val = advs  # Without dueling, directly use the advantage values
         return q_val
@@ -210,7 +207,8 @@ class ReplayBuffer:
 
 class DDQN:
     """
-    Factored Deep Q-Network (DDQN) agent for multi-dimensional discrete action spaces.
+    Double Deep Q-Network (DDQN) agent for a single-dimensional discrete action space.
+    At every step the agent selects one action index out of `n_actions` choices.
     Handles training, evaluation, and model management.
 
     Main features:
@@ -237,7 +235,6 @@ class DDQN:
     def __init__(
         self,
         state_dim: int,
-        action_dim: int,
         n_actions: int,
         env: gym.Env,
         eval_env: gym.Env = None,
@@ -261,7 +258,7 @@ class DDQN:
         """
         Initialize the DQN Agent
         :param state_dim: dimensionality of the input states
-        :param action_dim: dimensionality of the output actions
+        :param n_actions: number of choices in the (single) discrete action space
         :param gamma: discount factor
         :param env: environment to train on
         :param eval_env: environment to evaluate on
@@ -269,21 +266,21 @@ class DDQN:
         :param vision: boolean flag to indicate if the input state is an image or not
         """
         self.state_dim = state_dim
+        self.n_actions = n_actions
         self.device = torch.device("cpu")
-        self._q = BranchingQNetwork(
+        self._q = QNetwork(
             state_dim=state_dim,
-            action_dim=action_dim,
             n_actions=n_actions,
             use_dueling=use_dueling,
             net_arch=net_arch,
         )
-        self._q_target = BranchingQNetwork(
+        self._q_target = QNetwork(
             state_dim=state_dim,
-            action_dim=action_dim,
             n_actions=n_actions,
             use_dueling=use_dueling,
             net_arch=net_arch,
         )
+        hard_update(self._q_target, self._q)
         self.seed = seed
         self.rng = np.random.default_rng(seed=seed)
         torch.manual_seed(seed)
@@ -321,7 +318,7 @@ class DDQN:
 
         self.runtime_logs = {"train": [], "eval": [], "forward": [], "episode": {}}
         self.shift_constant = None
-        self.evaluator = DDQNFactEval(
+        self.evaluator = DDQNEval(
             agent=self,
             obs_space=eval_env.observation_space.shape[0],
             n_eval_episodes_per_instance=self.config["experiment"]["eval_n_episodes"],
@@ -385,21 +382,16 @@ class DDQN:
             x (np.ndarray): Observation/state.
             epsilon (float): Exploration rate.
         Returns:
-            int: Selected action.
+            int: Index of the selected action in the discrete action space.
         """
+        if self.rng.random() < epsilon:
+            return int(self.rng.integers(low=0, high=self.n_actions))
         x = self.tt(x)
-        if len(x.shape) == 1:
+        if x.dim() == 1:
             x = x.unsqueeze(0)
-        u = torch.argmax(self._q(x), dim=2)
-        u = u.squeeze(dim=0).numpy()
-        r = self.rng.random()
-        if r < epsilon:
-            return self.rng.integers(
-                low=0,
-                high=len(self._env.action_choices[0][0]),
-                size=len(self._env.action_choices[0]),
-            )
-        return u
+        with torch.no_grad():
+            u = torch.argmax(self._q(x), dim=1)
+        return int(u.item())
 
     def update_epsilon(
         self,
@@ -508,8 +500,9 @@ class DDQN:
                     )
 
                 a = self.act(s, epsilon if total_steps > begin_learning_after else 1.0)
+                # the env expects a sequence of action indices, here of length one
                 ns, r, tr, d, _ = self._env.step(
-                    actions=a,
+                    actions=[a],
                     shift=self.shift_constant if self.shift_constant else 0,
                 )
 
@@ -555,22 +548,26 @@ class DDQN:
                         self.tt(data_batch[3]),
                         self.tt(data_batch[4]),
                     )
-                    ## for MP
-                    batch_rewards = batch_rewards.unsqueeze(1)
-                    batch_terminal_flags = batch_terminal_flags.unsqueeze(1)
-                    argmax = torch.argmax(self._q(batch_next_states), dim=2)
-                    max_next_q_vals = (
-                        self._q_target(batch_next_states)
-                        .gather(2, argmax.unsqueeze(2))
-                        .squeeze(-1)
-                    )
-                    target = (
-                        batch_rewards + (1 - batch_terminal_flags) * self._gamma * max_next_q_vals
-                    )
+                    # all tensors below are of shape (batch_size,): one action per state
+                    with torch.no_grad():
+                        if self.use_double_dqn:
+                            # action selection by the online net, evaluation by the target net
+                            argmax = torch.argmax(self._q(batch_next_states), dim=1)
+                            max_next_q_vals = (
+                                self._q_target(batch_next_states)
+                                .gather(1, argmax.unsqueeze(1))
+                                .squeeze(1)
+                            )
+                        else:
+                            max_next_q_vals = self._q_target(batch_next_states).max(dim=1).values
+                        target = (
+                            batch_rewards
+                            + (1 - batch_terminal_flags) * self._gamma * max_next_q_vals
+                        )
                     current_prediction = (
                         self._q(batch_states)
-                        .gather(2, batch_actions.long().unsqueeze(2))
-                        .squeeze(-1)
+                        .gather(1, batch_actions.long().unsqueeze(1))
+                        .squeeze(1)
                     )
                     loss = self._loss_function(current_prediction, target.detach())
 
@@ -632,7 +629,7 @@ class DDQN:
         Returns:
             str: Agent name.
         """
-        return "factored_ddqn"
+        return "ddqn"
 
     def save_model(self, model_path):
         """
@@ -656,13 +653,13 @@ class DDQN:
         Args:
             n (int): Number of states.
         Returns:
-            List: Actions for each state.
+            List[int]: Greedy action index for each fitness value f(x) in [0, n).
         """
         start_time = time.time()
         with torch.no_grad():
             all_states = self.tt(np.array([[n, fx] for fx in range(0, n)]))
             q_values = self._q(all_states)
-            acts = q_values.argmax(dim=2).cpu().numpy().tolist()
+            acts = q_values.argmax(dim=1).cpu().numpy().tolist()
         self.runtime_logs["forward"].append(
             {
                 "step_runtime": time.time() - start_time,
@@ -810,11 +807,17 @@ def main():
     # create train_env and eval_env
     train_env = make_env(bench_params, train_env_params)
     eval_env = make_env(bench_params, eval_env_params)
-    if isinstance(train_env.action_space, gym.spaces.Discrete):
-        action_dim = train_env.action_space.n
-    else:
-        action_dim = train_env.action_space.shape[0]
-    state_dim = len(train_env.reset())
+    # this agent only supports a single-dimensional discrete action space
+    assert isinstance(train_env.action_space, gym.spaces.Discrete), (
+        "ERROR: the DDQN agent only supports a single-dimensional discrete action space, "
+        f"got {type(train_env.action_space).__name__}"
+    )
+    assert len(bench_params["action_choices"]) == 1, (
+        "ERROR: the DDQN agent expects exactly one list of action choices, "
+        f"got {len(bench_params['action_choices'])}"
+    )
+    n_actions = train_env.action_space.n
+    state_dim = train_env.observation_space.shape[0]
     # get loss function
     assert agent_params["loss_function"] in ["mse_loss", "smooth_l1_loss"]
     seed_everything(args.seed)
@@ -826,8 +829,7 @@ def main():
     agent_params["gamma"] = args.gamma
     agent = agent_class(
         state_dim=state_dim,
-        action_dim=action_dim,
-        n_actions=len(bench_params["action_choices"]),
+        n_actions=n_actions,
         env=train_env,
         eval_env=eval_env,
         out_dir=out_dir,
